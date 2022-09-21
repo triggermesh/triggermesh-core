@@ -40,6 +40,7 @@ rules:
   - eventing.triggermesh.io
   resources:
   - redisbrokers
+  - triggers
   verbs:
   - list
   - watch
@@ -49,6 +50,7 @@ rules:
   - eventing.triggermesh.io
   resources:
   - redisbrokers/status
+  - triggers/status
   verbs:
   - update
 
@@ -59,6 +61,7 @@ rules:
   - eventing.triggermesh.io
   resources:
   - redisbrokers/finalizers
+  - triggers/finalizers
   verbs:
   - update
 
@@ -67,6 +70,7 @@ rules:
   - eventing.triggermesh.io
   resources:
   - redisbrokers
+  - triggers
   verbs:
   - patch
 

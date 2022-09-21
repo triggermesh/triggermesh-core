@@ -35,6 +35,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&RedisBroker{},
 		&RedisBrokerList{},
+		&Trigger{},
+		&TriggerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

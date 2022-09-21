@@ -41,6 +41,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=eventing.triggermesh.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("redisbrokers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().RedisBrokers().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("triggers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().Triggers().Informer()}, nil
 
 	}
 

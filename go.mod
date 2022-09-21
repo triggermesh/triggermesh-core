@@ -3,7 +3,10 @@ module github.com/triggermesh/triggermesh-core
 go 1.19
 
 require (
+	go.uber.org/zap v1.21.0
+	k8s.io/api v0.24.4
 	k8s.io/apimachinery v0.24.4
+	k8s.io/client-go v0.24.4
 	k8s.io/code-generator v0.24.4
 	knative.dev/eventing v0.34.2
 	knative.dev/pkg v0.0.0-20220914154704-5f66ecf267fe
@@ -24,6 +27,7 @@ require (
 	github.com/cloudevents/sdk-go/v2 v2.10.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
+	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/go-kit/log v0.1.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
@@ -57,13 +61,11 @@ require (
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/rickb777/date v1.13.0 // indirect
 	github.com/rickb777/plural v1.2.1 // indirect
-	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/automaxprocs v1.4.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
@@ -83,9 +85,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.24.4 // indirect
 	k8s.io/apiextensions-apiserver v0.24.4 // indirect
-	k8s.io/client-go v0.24.4 // indirect
 	k8s.io/gengo v0.0.0-20220613173612-397b4ae3bce7 // indirect
 	k8s.io/klog/v2 v2.70.2-0.20220707122935-0990e81f1a8f // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect

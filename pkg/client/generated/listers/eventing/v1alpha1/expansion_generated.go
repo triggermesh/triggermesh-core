@@ -11,3 +11,11 @@ type RedisBrokerListerExpansion interface{}
 // RedisBrokerNamespaceListerExpansion allows custom methods to be added to
 // RedisBrokerNamespaceLister.
 type RedisBrokerNamespaceListerExpansion interface{}
+
+// TriggerListerExpansion allows custom methods to be added to
+// TriggerLister.
+type TriggerListerExpansion interface{}
+
+// TriggerNamespaceListerExpansion allows custom methods to be added to
+// TriggerNamespaceLister.
+type TriggerNamespaceListerExpansion interface{}

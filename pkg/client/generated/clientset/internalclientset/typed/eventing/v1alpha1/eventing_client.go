@@ -15,6 +15,7 @@ import (
 type EventingV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	RedisBrokersGetter
+	TriggersGetter
 }
 
 // EventingV1alpha1Client is used to interact with features provided by the eventing.triggermesh.io group.
@@ -24,6 +25,10 @@ type EventingV1alpha1Client struct {
 
 func (c *EventingV1alpha1Client) RedisBrokers(namespace string) RedisBrokerInterface {
 	return newRedisBrokers(c, namespace)
+}
+
+func (c *EventingV1alpha1Client) Triggers(namespace string) TriggerInterface {
+	return newTriggers(c, namespace)
 }
 
 // NewForConfig creates a new EventingV1alpha1Client for the given config.

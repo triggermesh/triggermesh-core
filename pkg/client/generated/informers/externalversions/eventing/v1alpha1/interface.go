@@ -12,6 +12,8 @@ import (
 type Interface interface {
 	// RedisBrokers returns a RedisBrokerInformer.
 	RedisBrokers() RedisBrokerInformer
+	// Triggers returns a TriggerInformer.
+	Triggers() TriggerInformer
 }
 
 type version struct {
@@ -28,4 +30,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // RedisBrokers returns a RedisBrokerInformer.
 func (v *version) RedisBrokers() RedisBrokerInformer {
 	return &redisBrokerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Triggers returns a TriggerInformer.
+func (v *version) Triggers() TriggerInformer {
+	return &triggerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
