@@ -1,0 +1,83 @@
+# Copyright 2022 TriggerMesh Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triggermesh-core-controller
+  namespace: triggermesh
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+    app.kubernetes.io/version: devel
+    app.kubernetes.io/component: core-controller
+    app.kubernetes.io/name: triggermesh-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triggermesh-core-controller
+  template:
+    metadata:
+      labels:
+        app: triggermesh-core-controller
+        app.kubernetes.io/part-of: triggermesh
+        app.kubernetes.io/version: devel
+        app.kubernetes.io/component: core-controller
+        app.kubernetes.io/name: triggermesh-eventing
+
+    spec:
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: eventing-controller
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+
+      serviceAccountName: triggermesh-core-controller
+      enableServiceLinks: false
+
+      containers:
+      - name: controller
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: ko://github.com/triggermesh/triggermesh-core/cmd/core-controller
+
+        resources:
+          requests:
+            cpu: 50m
+            memory: 50Mi
+          limits:
+            cpu: 50m
+            memory: 200Mi
+
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        # Logging/observability configuration
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: METRICS_DOMAIN
+          value: triggermesh.io
+        # Source adapters
+        - name: REDISBROKER_IMAGE
+          value: pmercado/redis-broker:v0.1.0
+
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: [all]
+
+        ports:
+        - name: metrics
+          containerPort: 9090
+        - name: profiling
+          containerPort: 8008

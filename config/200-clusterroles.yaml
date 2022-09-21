@@ -1,0 +1,202 @@
+# Copyright 2022 TriggerMesh Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: triggermesh-core-controller
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+
+rules:
+
+# Record Kubernetes events
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+
+# Manage broker deployments
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  - patch
+
+# Read reconciled TriggerMesh core resources and update their statuses
+# +rbac-check
+- apiGroups:
+  - eventing.triggermesh.io
+  resources:
+  - redisbrokers
+  verbs:
+  - list
+  - watch
+  - get
+# +rbac-check:subresource=status
+- apiGroups:
+  - eventing.triggermesh.io
+  resources:
+  - redisbrokers/status
+  verbs:
+  - update
+
+# Ensure compatibility with the OwnerReferencesPermissionEnforcement Admission Controller
+# https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/#ownerreferencespermissionenforcement
+# +rbac-check:subresource=finalizers
+- apiGroups:
+  - eventing.triggermesh.io
+  resources:
+  - redisbrokers/finalizers
+  verbs:
+  - update
+
+# Set finalizers
+- apiGroups:
+  - eventing.triggermesh.io
+  resources:
+  - redisbrokers
+  verbs:
+  - patch
+
+# Manage resource-specific ServiceAccounts and RoleBindings
+- apiGroups:
+  - ''
+  resources:
+  - serviceaccounts
+  - serviceaccounts/finalizers
+  verbs:
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  verbs:
+  - list
+  - watch
+  - create
+
+# Read configuration/credentials
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+
+# Read controller configurations
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  resourceNames:
+  - config-logging
+  - config-observability
+  - config-leader-election
+  verbs:
+  - get
+
+# Acquire leases for leader election
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - create
+  - update
+
+---
+
+# This role is used to grant receive adapters read-only access to per-component
+# configurations such as logging, observability and tracing.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: triggermesh-config-watcher
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+rules:
+- apiGroups:
+  - ''
+  resources:
+  - configmaps
+  verbs:
+  - list
+  - watch
+  - get
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: awssnssource-adapter
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+rules:
+
+# Record Kubernetes events
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+  - update
+
+# Read Source resources and update their statuses
+- apiGroups:
+  - sources.triggermesh.io
+  resources:
+  - awssnssources
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - sources.triggermesh.io
+  resources:
+  - awssnssources/status
+  verbs:
+  - patch
+
+# Read credentials
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - get
+
+# Acquire leases for leader election
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - create
+  - update

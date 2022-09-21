@@ -1,0 +1,12 @@
+# Copyright 2022 TriggerMesh Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-observability
+  namespace: triggermesh
+data:
+  # Enables the Prometheus metrics exporter in all TriggerMesh components.
+  # Exposes telemetry metrics in a text-based format on the HTTP endpoint :9092/metrics.
+  metrics.backend-destination: prometheus

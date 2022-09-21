@@ -1,0 +1,48 @@
+# Copyright 2022 TriggerMesh Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: triggermesh-core-namespaced-admin
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    app.kubernetes.io/part-of: triggermesh
+rules:
+- apiGroups:
+  - eventing.triggermesh.io
+  resources: ["*"]
+  verbs: ["*"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: triggermesh-core-namespaced-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    app.kubernetes.io/part-of: triggermesh
+rules:
+- apiGroups:
+  - eventing.triggermesh.io
+  resources: ["*"]
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: triggermesh-core-namespaced-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    app.kubernetes.io/part-of: triggermesh
+rules:
+- apiGroups:
+  - eveinting.triggermesh.io
+  resources: ["*"]
+  verbs:
+  - get
+  - list
+  - watch

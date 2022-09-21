@@ -1,0 +1,18 @@
+# Copyright 2022 TriggerMesh Inc.
+# SPDX-License-Identifier: Apache-2.0
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggermesh-core-controller
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+subjects:
+- kind: ServiceAccount
+  name: triggermesh-core-controller
+  namespace: triggermesh
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: triggermesh-core-controller
+
