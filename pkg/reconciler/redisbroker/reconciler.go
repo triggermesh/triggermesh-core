@@ -8,8 +8,6 @@ import (
 
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
-	corev1listers "k8s.io/client-go/listers/core/v1"
-	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/reconciler"
@@ -18,11 +16,9 @@ import (
 )
 
 type Reconciler struct {
-	kubeClientSet        kubernetes.Interface
-	redisReconciler      redisReconciler
-	serviceLister        corev1listers.ServiceLister
-	serviceAccountLister corev1listers.ServiceAccountLister
-	roleBindingLister    rbacv1listers.RoleBindingLister
+	kubeClientSet    kubernetes.Interface
+	redisReconciler  redisReconciler
+	brokerReconciler brokerReconciler
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.RedisBroker) reconciler.Event {
@@ -30,19 +26,19 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 
 	// Clean any dangling resources
 
-	// Iterate triggers and create secret
-
-	// Make sure the Redis deployment exists and propagate the status to the Channel
+	// Make sure the Redis deployment and service exists.
 	_, _, err := r.redisReconciler.reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}
 
-	// create service for redis
+	// Iterate triggers and create secret
 
-	// create deployment for broker
-
-	// create service for broker
+	// Make sure the Broker deployment for Redis exists and that it points to the Redis service.
+	_, _, err = r.brokerReconciler.reconcile(ctx, rb)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
