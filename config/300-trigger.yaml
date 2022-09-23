@@ -179,9 +179,9 @@ spec:
                   uri:
                     description: URI can be an absolute URL(non-empty scheme and non-empty host) pointing to the target or a relative URI. Relative URIs will be resolved using the base URI retrieved from Ref.
                     type: string
-                required:
-                - kind
-                - name
+                oneOf:
+                - required: [ref]
+                - required: [uri]
 
               delivery:
                 description: Delivery contains the delivery spec for this specific trigger.
