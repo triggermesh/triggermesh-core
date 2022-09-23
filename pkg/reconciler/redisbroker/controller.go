@@ -35,7 +35,7 @@ func NewController(
 
 	r := &Reconciler{
 		kubeClientSet:        kubeclient.Get(ctx),
-		redisReconciler:      newRedisReconciler(ctx, deploymentInformer.Lister()),
+		redisReconciler:      newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister()),
 		serviceLister:        serviceInformer.Lister(),
 		serviceAccountLister: serviceAccountInformer.Lister(),
 		roleBindingLister:    roleBindingInformer.Lister(),

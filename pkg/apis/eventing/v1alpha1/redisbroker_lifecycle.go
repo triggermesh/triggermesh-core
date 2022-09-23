@@ -4,10 +4,12 @@
 package v1alpha1
 
 import (
+	"context"
 	"sync"
 
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
@@ -97,6 +99,39 @@ func (bs *RedisBrokerStatus) InitializeConditions() {
 	bs.GetConditionSet().Manage(bs).InitializeConditions()
 }
 
-func (bs *RedisBrokerStatus) MarkRedisBrokerFailed(reason, messageFormat string, messageA ...interface{}) {
+func (bs *RedisBrokerStatus) MarkRedisDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisDeploymentUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) PropagateRedisDeploymentAvailability(ctx context.Context, ds *appsv1.DeploymentStatus) {
+	for _, cond := range ds.Conditions {
+
+		if cond.Type == appsv1.DeploymentAvailable {
+			switch cond.Status {
+			case corev1.ConditionTrue:
+				redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisDeployment)
+			case corev1.ConditionFalse:
+				bs.MarkRedisDeploymentFailed("RedisDeploymentFalse", "The status of Redis Deployment is False: %s : %s", cond.Reason, cond.Message)
+			default:
+				// expected corev1.ConditionUnknown
+				bs.MarkRedisDeploymentUnknown("RedisDeploymentUnknown", "The status of Redis Deployment is Unknown: %s : %s", cond.Reason, cond.Message)
+			}
+		}
+	}
+}
+
+func (bs *RedisBrokerStatus) MarkRedisServiceFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisService, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisServiceUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerRedisService, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisServiceReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisService)
 }
