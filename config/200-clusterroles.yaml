@@ -34,6 +34,22 @@ rules:
   - delete
   - patch
 
+# Manage broker services
+- apiGroups:
+  - ''
+  resources:
+  - services
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  - patch
+
+
+
 # Read reconciled TriggerMesh core resources and update their statuses
 # +rbac-check
 - apiGroups:
