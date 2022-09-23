@@ -33,7 +33,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	// Iterate triggers and create secret
 
 	// Make sure the Redis deployment exists and propagate the status to the Channel
-	_, err := r.redisReconciler.Reconcile(ctx, rb)
+	_, _, err := r.redisReconciler.reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}

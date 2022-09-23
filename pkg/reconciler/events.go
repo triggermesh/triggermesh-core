@@ -15,19 +15,16 @@ const (
 	// ReasonFailedRBACUpdate = "FailedRBACUpdate"
 
 	ReasonDeploymentCreate       = "CreateDeployment"
-	ReasonDeploymentGet          = "GetDeployment"
 	ReasonDeploymentUpdate       = "UpdateDeployment"
+	ReasonFailedDeploymentGet    = "FailedDeploymentGet"
 	ReasonFailedDeploymentCreate = "FailedDeploymentCreate"
 	ReasonFailedDeploymentUpdate = "FailedDeploymentUpdate"
 
-	// // ReasonServiceCreate indicates that an Service object was successfully created.
-	// ReasonServiceCreate = "CreateService"
-	// // ReasonServiceUpdate indicates that an Service object was successfully updated.
-	// ReasonServiceUpdate = "UpdateService"
-	// // ReasonFailedServiceCreate indicates that the creation of an Service object failed.
-	// ReasonFailedServiceCreate = "FailedServiceCreate"
-	// // ReasonFailedServiceUpdate indicates that the update of an Service object failed.
-	// ReasonFailedServiceUpdate = "FailedServiceUpdate"
+	ReasonServiceCreate       = "CreateService"
+	ReasonServiceUpdate       = "UpdateService"
+	ReasonFailedServiceGet    = "FailedServiceGet"
+	ReasonFailedServiceCreate = "FailedServiceCreate"
+	ReasonFailedServiceUpdate = "FailedServiceUpdate"
 
 	// // ReasonBadSinkURI indicates that the URI of a sink can't be determined.
 	// ReasonBadSinkURI = "BadSinkURI"
