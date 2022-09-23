@@ -13,16 +13,22 @@ import (
 )
 
 const (
-	BrokerConditionReady                          = apis.ConditionReady
-	BrokerConditionIngress     apis.ConditionType = "IngressReady"
-	BrokerConditionAddressable apis.ConditionType = "Addressable"
+	RedisBrokerConditionReady                          = apis.ConditionReady
+	RedisBrokerRedisDeployment      apis.ConditionType = "RedisDeploymentReady"
+	RedisBrokerRedisService         apis.ConditionType = "RedisServiceReady"
+	RedisBrokerBrokerDeployment     apis.ConditionType = "BrokerDeploymentReady"
+	RedisBrokerBrokerService        apis.ConditionType = "BrokerServiceReady"
+	RedisBrokerConditionAddressable apis.ConditionType = "Addressable"
 )
 
-var brokerCondSet = apis.NewLivingConditionSet(
-	BrokerConditionIngress,
-	BrokerConditionAddressable,
+var redisBrokerCondSet = apis.NewLivingConditionSet(
+	RedisBrokerRedisDeployment,
+	RedisBrokerRedisService,
+	RedisBrokerBrokerDeployment,
+	RedisBrokerBrokerService,
+	RedisBrokerConditionAddressable,
 )
-var brokerCondSetLock = sync.RWMutex{}
+var redisBrokerCondSetLock = sync.RWMutex{}
 
 // GetGroupVersionKind returns GroupVersionKind for Brokers
 func (t *RedisBroker) GetGroupVersionKind() schema.GroupVersionKind {
@@ -36,26 +42,26 @@ func (t *RedisBroker) GetStatus() *duckv1.Status {
 
 // RegisterAlternateBrokerConditionSet register a apis.ConditionSet for the given broker class.
 func RegisterAlternateBrokerConditionSet(conditionSet apis.ConditionSet) {
-	brokerCondSetLock.Lock()
-	defer brokerCondSetLock.Unlock()
+	redisBrokerCondSetLock.Lock()
+	defer redisBrokerCondSetLock.Unlock()
 
-	brokerCondSet = conditionSet
+	redisBrokerCondSet = conditionSet
 }
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
 func (b *RedisBroker) GetConditionSet() apis.ConditionSet {
-	brokerCondSetLock.RLock()
-	defer brokerCondSetLock.RUnlock()
+	redisBrokerCondSetLock.RLock()
+	defer redisBrokerCondSetLock.RUnlock()
 
-	return brokerCondSet
+	return redisBrokerCondSet
 }
 
 // GetConditionSet retrieves the condition set for this resource.
 func (bs *RedisBrokerStatus) GetConditionSet() apis.ConditionSet {
-	brokerCondSetLock.RLock()
-	defer brokerCondSetLock.RUnlock()
+	redisBrokerCondSetLock.RLock()
+	defer redisBrokerCondSetLock.RUnlock()
 
-	return brokerCondSet
+	return redisBrokerCondSet
 }
 
 // GetTopLevelCondition returns the top level Condition.
@@ -68,9 +74,9 @@ func (bs *RedisBrokerStatus) GetTopLevelCondition() *apis.Condition {
 func (bs *RedisBrokerStatus) SetAddress(url *apis.URL) {
 	bs.Address.URL = url
 	if url != nil {
-		bs.GetConditionSet().Manage(bs).MarkTrue(BrokerConditionAddressable)
+		bs.GetConditionSet().Manage(bs).MarkTrue(RedisBrokerConditionAddressable)
 	} else {
-		bs.GetConditionSet().Manage(bs).MarkFalse(BrokerConditionAddressable, "nil URL", "URL is nil")
+		bs.GetConditionSet().Manage(bs).MarkFalse(RedisBrokerConditionAddressable, "nil URL", "URL is nil")
 	}
 }
 
@@ -89,4 +95,8 @@ func (b *RedisBroker) IsReady() bool {
 // InitializeConditions sets relevant unset conditions to Unknown state.
 func (bs *RedisBrokerStatus) InitializeConditions() {
 	bs.GetConditionSet().Manage(bs).InitializeConditions()
+}
+
+func (bs *RedisBrokerStatus) MarkRedisBrokerFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)
 }
