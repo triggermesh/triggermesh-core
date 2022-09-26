@@ -20,6 +20,7 @@ const (
 	RedisBrokerRedisService         apis.ConditionType = "RedisServiceReady"
 	RedisBrokerBrokerDeployment     apis.ConditionType = "BrokerDeploymentReady"
 	RedisBrokerBrokerService        apis.ConditionType = "BrokerServiceReady"
+	RedisBrokerConfigSecret         apis.ConditionType = "BrokerConfigSecretReady"
 	RedisBrokerConditionAddressable apis.ConditionType = "Addressable"
 )
 
@@ -28,6 +29,7 @@ var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerRedisService,
 	RedisBrokerBrokerDeployment,
 	RedisBrokerBrokerService,
+	RedisBrokerConfigSecret,
 	RedisBrokerConditionAddressable,
 )
 var redisBrokerCondSetLock = sync.RWMutex{}
@@ -134,4 +136,16 @@ func (bs *RedisBrokerStatus) MarkRedisServiceUnknown(reason, messageFormat strin
 
 func (bs *RedisBrokerStatus) MarkRedisServiceReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisService)
+}
+
+func (bs *RedisBrokerStatus) MarkConfigSecretFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkConfigSecretUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
 }

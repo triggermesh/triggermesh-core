@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
+	"knative.dev/pkg/kmeta"
 )
 
 var triggerCondSet = apis.NewLivingConditionSet(TriggerConditionBroker, TriggerConditionTarget, TriggerConditionTargetResolved, TriggerConditionDeadLetterSinkResolved)
@@ -152,4 +153,26 @@ func (ts *TriggerStatus) MarkDeadLetterSinkNotConfigured() {
 
 func (ts *TriggerStatus) MarkDeadLetterSinkResolvedFailed(reason, messageFormat string, messageA ...interface{}) {
 	triggerCondSet.Manage(ts).MarkFalse(TriggerConditionDeadLetterSinkResolved, reason, messageFormat, messageA...)
+}
+
+func (t *Trigger) ReferencesBroker(broker kmeta.OwnerRefable) bool {
+	gvk := broker.GetGroupVersionKind()
+
+	// Require same namespace for Trigger and Broker.
+	if t.Spec.Broker.Namespace != "" &&
+		t.Spec.Broker.Namespace != broker.GetObjectMeta().GetNamespace() {
+		return false
+	}
+
+	// If APIVersion is informed it should match the Broker's.
+	if t.Spec.Broker.APIVersion != "" {
+		if t.Spec.Broker.APIVersion != gvk.GroupVersion().String() {
+			return false
+		}
+	} else if t.Spec.Broker.Group != gvk.Group {
+		return false
+	}
+
+	return t.Spec.Broker.Name == broker.GetObjectMeta().GetName() &&
+		t.Spec.Broker.Kind == gvk.Kind
 }

@@ -26,6 +26,13 @@ const (
 	ReasonFailedServiceCreate = "FailedServiceCreate"
 	ReasonFailedServiceUpdate = "FailedServiceUpdate"
 
+	ReasonFailedTriggerList     = "FailedTriggerList"
+	ReasonFailedConfigSerialize = "FailedConfigSerialize"
+	// ReasonServiceUpdate       = "UpdateService"
+	// ReasonFailedServiceGet    = "FailedServiceGet"
+	// ReasonFailedServiceCreate = "FailedServiceCreate"
+	// ReasonFailedServiceUpdate = "FailedServiceUpdate"
+
 	// // ReasonBadSinkURI indicates that the URI of a sink can't be determined.
 	// ReasonBadSinkURI = "BadSinkURI"
 
