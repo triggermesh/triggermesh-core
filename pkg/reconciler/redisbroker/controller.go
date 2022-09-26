@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
@@ -34,13 +35,16 @@ func NewController(
 
 	rbInformer := rbinformer.Get(ctx)
 	trgInformer := trginformer.Get(ctx)
+	secretInformer := secret.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
 	serviceAccountInformer := serviceaccount.Get(ctx)
+	// TODO rolebinding
 	_ = rolebinding.Get(ctx)
 
 	r := &Reconciler{
 		kubeClientSet:    kubeclient.Get(ctx),
+		secretReconciler: newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		redisReconciler:  newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister()),
 		brokerReconciler: newBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister()),
 	}
@@ -51,11 +55,14 @@ func NewController(
 
 	rbInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
+	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterController(rb),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterController(rb),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
-
 	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterController(rb),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
@@ -65,6 +72,7 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
+	// Filter Triggers that reference a Redis broker.
 	filterTriggerForRedisBroker := func(obj interface{}) bool {
 		t, ok := obj.(*eventingv1alpha1.Trigger)
 		if !ok {
@@ -89,6 +97,7 @@ func NewController(
 		return false
 
 	}
+
 	enqueueFromTrigger := func(obj interface{}) {
 		t, ok := obj.(*eventingv1alpha1.Trigger)
 		if !ok {
@@ -100,9 +109,6 @@ func NewController(
 			Namespace: t.Namespace,
 		})
 	}
-
-	// Filter triggers for redisbroker
-	// enqueue at the broker
 
 	trgInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterTriggerForRedisBroker,

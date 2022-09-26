@@ -34,11 +34,12 @@ rules:
   - delete
   - patch
 
-# Manage broker services
+# Manage broker services and configuration as secrets
 - apiGroups:
   - ''
   resources:
   - services
+  - secrets
   verbs:
   - get
   - list
