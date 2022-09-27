@@ -165,7 +165,8 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 
 	return resources.NewSecret(rb.Namespace, rb.Name,
 		resources.SecretWithMetaOptions(
-			resources.MetaAddLabel("app", "redis-server"),
+			resources.MetaAddLabel("app", redisResourceSuffix),
+			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+"redisbroker-config"),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.SecretSetData(configSecretKey, b)), nil
 }
