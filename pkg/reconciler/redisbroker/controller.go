@@ -6,6 +6,7 @@ package redisbroker
 import (
 	"context"
 
+	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -26,12 +27,25 @@ import (
 	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisbroker"
 )
 
+// envConfig will be used to extract the required environment variables using
+// github.com/kelseyhightower/envconfig. If this configuration cannot be extracted, then
+// NewController will panic.
+type envConfig struct {
+	RedisImage  string `envconfig:"REDISBROKER_REDIS_IMAGE" required:"true"`
+	BrokerImage string `envconfig:"REDISBROKER_BROKER_IMAGE" required:"true"`
+}
+
 // NewController initializes the controller and is called by the generated code
 // Registers event handlers to enqueue events
 func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
+
+	env := &envConfig{}
+	if err := envconfig.Process("", env); err != nil {
+		logging.FromContext(ctx).Panicf("unable to process RedisBroker's required environment variables: %v", err)
+	}
 
 	rbInformer := rbinformer.Get(ctx)
 	trgInformer := trginformer.Get(ctx)
@@ -45,8 +59,8 @@ func NewController(
 	r := &Reconciler{
 		kubeClientSet:    kubeclient.Get(ctx),
 		secretReconciler: newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
-		redisReconciler:  newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister()),
-		brokerReconciler: newBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister()),
+		redisReconciler:  newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), env.RedisImage),
+		brokerReconciler: newBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), env.BrokerImage),
 	}
 
 	impl := rbreconciler.NewImpl(ctx, r)

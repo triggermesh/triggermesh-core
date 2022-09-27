@@ -26,19 +26,19 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", *rb))
 
 	// Make sure the Redis deployment and service exists.
-	_, _, err := r.redisReconciler.reconcile(ctx, rb)
+	_, svc, err := r.redisReconciler.reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}
 
 	// Iterate triggers and create secret
-	_, err = r.secretReconciler.reconcile(ctx, rb)
+	secret, err := r.secretReconciler.reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}
 
 	// Make sure the Broker deployment for Redis exists and that it points to the Redis service.
-	_, _, err = r.brokerReconciler.reconcile(ctx, rb)
+	_, _, err = r.brokerReconciler.reconcile(ctx, rb, svc, secret)
 	if err != nil {
 		return err
 	}

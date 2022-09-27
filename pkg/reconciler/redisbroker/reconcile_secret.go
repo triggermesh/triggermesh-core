@@ -26,6 +26,8 @@ import (
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
 
+const configSecretKey = "config"
+
 type secretReconciler struct {
 	client        kubernetes.Interface
 	secretLister  corev1listers.SecretLister
@@ -165,5 +167,5 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 		resources.SecretWithMetaOptions(
 			resources.MetaAddLabel("app", "redis-server"),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.SecretSetData("config", b)), nil
+		resources.SecretSetData(configSecretKey, b)), nil
 }

@@ -59,9 +59,11 @@ func DeploymentAddSelectorForTemplate(key, value string) DeploymentOption {
 	}
 }
 
-func DeploymentWithTemplateOption(o PodSpecOption) DeploymentOption {
+func DeploymentWithTemplateOptions(opts ...PodSpecOption) DeploymentOption {
 	return func(d *appsv1.Deployment) {
-		o(&d.Spec.Template.Spec)
+		for _, opt := range opts {
+			opt(&d.Spec.Template.Spec)
+		}
 	}
 }
 
@@ -83,5 +85,14 @@ func PodSpecAddContainer(c *corev1.Container) PodSpecOption {
 			ps.Containers = make([]corev1.Container, 0, 1)
 		}
 		ps.Containers = append(ps.Containers, *c)
+	}
+}
+
+func PodSpecAddVolume(v *corev1.Volume) PodSpecOption {
+	return func(ps *corev1.PodSpec) {
+		if ps.Volumes == nil {
+			ps.Volumes = make([]corev1.Volume, 0, 1)
+		}
+		ps.Volumes = append(ps.Volumes, *v)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -32,7 +33,7 @@ func TestNewDeployment(t *testing.T) {
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOption(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
+				DeploymentWithTemplateOptions(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -63,7 +64,7 @@ spec:
 					MetaAddOwner(tOwner, appsv1.SchemeGroupVersion.WithKind("Deployment"))),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOption(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
+				DeploymentWithTemplateOptions(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -98,7 +99,7 @@ spec:
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOption(PodSpecAddContainer(
+				DeploymentWithTemplateOptions(PodSpecAddContainer(
 					NewContainer("container-name", "my-image",
 						ContainerAddEnvFromValue("MYENV", "env-value"),
 					))),
@@ -133,7 +134,7 @@ spec:
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOption(PodSpecAddContainer(
+				DeploymentWithTemplateOptions(PodSpecAddContainer(
 					NewContainer("container-name", "my-image",
 						ContainerAddPort("myport", 12345),
 					))),
@@ -173,6 +174,44 @@ spec:
 			expected := obj.(*appsv1.Deployment)
 
 			assert.Equal(t, expected, got)
+		})
+	}
+}
+
+func TestNewPodSpec(t *testing.T) {
+	testCases := map[string]struct {
+		options  []PodSpecOption
+		expected corev1.PodSpec
+	}{
+		"with container": {
+			options: []PodSpecOption{
+				PodSpecAddContainer(NewContainer(tName, tImage)),
+			},
+			expected: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:  tName,
+						Image: tImage,
+					},
+				},
+			}},
+		"with volume": {
+			options: []PodSpecOption{
+				PodSpecAddVolume(NewVolume(tName)),
+			},
+			expected: corev1.PodSpec{
+				Volumes: []corev1.Volume{
+					{
+						Name: tName,
+					},
+				},
+			}},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := NewPodSpec(tc.options...)
+			assert.Equal(t, tc.expected, *got)
 		})
 	}
 }
