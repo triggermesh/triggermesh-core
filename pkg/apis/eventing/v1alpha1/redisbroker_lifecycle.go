@@ -14,6 +14,9 @@ import (
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 )
 
+// RedisBrokerRedis refers to the Redis instance backing the broker.
+// RedisBrokerBroker refers to the TriggerMesh Broker that manages events on top of Redis.
+
 const (
 	RedisBrokerConditionReady                          = apis.ConditionReady
 	RedisBrokerRedisDeployment      apis.ConditionType = "RedisDeploymentReady"
@@ -30,7 +33,8 @@ var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerBrokerDeployment,
 	RedisBrokerBrokerService,
 	RedisBrokerConfigSecret,
-	RedisBrokerConditionAddressable,
+
+// TODO RedisBrokerConditionAddressable,
 )
 var redisBrokerCondSetLock = sync.RWMutex{}
 
@@ -42,14 +46,6 @@ func (t *RedisBroker) GetGroupVersionKind() schema.GroupVersionKind {
 // GetStatus retrieves the status of the Broker. Implements the KRShaped interface.
 func (t *RedisBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
-}
-
-// RegisterAlternateBrokerConditionSet register a apis.ConditionSet for the given broker class.
-func RegisterAlternateBrokerConditionSet(conditionSet apis.ConditionSet) {
-	redisBrokerCondSetLock.Lock()
-	defer redisBrokerCondSetLock.Unlock()
-
-	redisBrokerCondSet = conditionSet
 }
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
@@ -101,6 +97,21 @@ func (bs *RedisBrokerStatus) InitializeConditions() {
 	bs.GetConditionSet().Manage(bs).InitializeConditions()
 }
 
+func (bs *RedisBrokerStatus) MarkConfigSecretFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkConfigSecretUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
+}
+
+// Manage Redis server state for both
+// Service and Deployment
+
 func (bs *RedisBrokerStatus) MarkRedisDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)
 }
@@ -138,14 +149,42 @@ func (bs *RedisBrokerStatus) MarkRedisServiceReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisService)
 }
 
-func (bs *RedisBrokerStatus) MarkConfigSecretFailed(reason, messageFormat string, messageA ...interface{}) {
-	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+// Manage Redis broker state for both
+// Service and Deployment
+
+func (bs *RedisBrokerStatus) MarkBrokerDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerDeployment, reason, messageFormat, messageA...)
 }
 
-func (bs *RedisBrokerStatus) MarkConfigSecretUnknown(reason, messageFormat string, messageA ...interface{}) {
-	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerConfigSecret, reason, messageFormat, messageA...)
+func (bs *RedisBrokerStatus) MarkBrokerDeploymentUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerDeployment, reason, messageFormat, messageA...)
 }
 
-func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
-	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
+func (bs *RedisBrokerStatus) PropagateBrokerDeploymentAvailability(ctx context.Context, ds *appsv1.DeploymentStatus) {
+	for _, cond := range ds.Conditions {
+
+		if cond.Type == appsv1.DeploymentAvailable {
+			switch cond.Status {
+			case corev1.ConditionTrue:
+				redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerDeployment)
+			case corev1.ConditionFalse:
+				bs.MarkBrokerDeploymentFailed("BrokerDeploymentFalse", "The status of Broker Deployment is False: %s : %s", cond.Reason, cond.Message)
+			default:
+				// expected corev1.ConditionUnknown
+				bs.MarkBrokerDeploymentUnknown("BrokerDeploymentUnknown", "The status of Broker Deployment is Unknown: %s : %s", cond.Reason, cond.Message)
+			}
+		}
+	}
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerServiceFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerService, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerServiceUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerService, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerServiceReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerService)
 }

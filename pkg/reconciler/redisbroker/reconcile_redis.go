@@ -22,6 +22,10 @@ import (
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
 
+const (
+	redisResourceSuffix = "redisbroker-redis"
+)
+
 type redisReconciler struct {
 	client           kubernetes.Interface
 	deploymentLister appsv1listers.DeploymentLister
@@ -53,12 +57,13 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 }
 
 func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv1.Deployment {
-	return resources.NewDeployment(rb.Namespace, rb.Name+"-redis-server",
+	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel("app", "redis-server"),
-			resources.MetaAddLabel("eventing.triggermesh.io/redis-name", rb.Name+"-redis-server"),
+			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.DeploymentAddSelectorForTemplate("eventing.triggermesh.io/redis-name", rb.Name+"-redis-server"),
+		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 		resources.DeploymentSetReplicas(1),
 		resources.DeploymentWithTemplateOptions(
 			resources.PodSpecAddContainer(
@@ -117,13 +122,14 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 }
 
 func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
-	return resources.NewService(rb.Namespace, rb.Name+"-redis-server",
+	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel("app", "redis-server"),
-			resources.MetaAddLabel("eventing.triggermesh.io/redis-name", rb.Name+"-redis-server"),
+			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
-		resources.ServiceAddSelectorLabel("eventing.triggermesh.io/redis-name", rb.Name+"-redis-server"),
+		resources.ServiceAddSelectorLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 		resources.ServiceAddPort("redis", 6379, 6379))
 }
 

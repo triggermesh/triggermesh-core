@@ -27,6 +27,8 @@ import (
 const (
 	configSecretFile = "config"
 	configSecretPath = "/opt/broker"
+
+	brokerResourceSuffix = "redisbroker-broker"
 )
 
 var (
@@ -72,12 +74,13 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 
 	redisService := fmt.Sprintf("%s:%d", redis.Name, redis.Spec.Ports[0].Port)
 
-	return resources.NewDeployment(rb.Namespace, rb.Name+"-redis-broker",
+	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel("app", "redis-broker"),
-			resources.MetaAddLabel("eventing.triggermesh.io/redis-broker-name", rb.Name+"-redis-broker"),
+			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel("component", brokerResourceSuffix),
+			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.DeploymentAddSelectorForTemplate("eventing.triggermesh.io/redis-broker-name", rb.Name+"-redis-broker"),
+		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 		resources.DeploymentSetReplicas(1),
 		resources.DeploymentWithTemplateOptions(
 			resources.PodSpecAddVolume(v),
@@ -103,50 +106,51 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 			current, err = r.client.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-				logging.FromContext(ctx).Error("Unable to update the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentUpdate, "Failed to update Redis deployment")
+				logging.FromContext(ctx).Error("Unable to update broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
+				rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentUpdate, "Failed to update broker deployment")
 
 				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentUpdate,
-					"Failed to get Redis deployment %s: %w", fullname, err)
+					"Failed to get broker deployment %s: %w", fullname, err)
 			}
 		}
 
 	case !apierrs.IsNotFound(err):
 		// An error ocurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
+		logging.FromContext(ctx).Error("Unable to get broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
+		rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get broker deployment")
 
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentGet,
-			"Failed to get Redis deployment %s: %w", fullname, err)
+			"Failed to get broker deployment %s: %w", fullname, err)
 
 	default:
 		// The deployment has not been found, create it.
 		current, err = r.client.AppsV1().Deployments(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-			logging.FromContext(ctx).Error("Unable to create the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentCreate, "Failed to create Redis deployment")
+			logging.FromContext(ctx).Error("Unable to create broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
+			rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentCreate, "Failed to create broker deployment")
 
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentCreate,
-				"Failed to create Redis deployment %s: %w", fullname, err)
+				"Failed to create broker deployment %s: %w", fullname, err)
 		}
 	}
 
 	// Update status based on deployment
-	rb.Status.PropagateRedisDeploymentAvailability(ctx, &current.Status)
+	rb.Status.PropagateBrokerDeploymentAvailability(ctx, &current.Status)
 
 	return current, nil
 }
 
 func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
-	return resources.NewService(rb.Namespace, rb.Name+"-redis-broker",
+	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel("app", "redis-broker"),
-			resources.MetaAddLabel("eventing.triggermesh.io/redis-broker-name", rb.Name+"-redis-broker"),
+			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel("component", brokerResourceSuffix),
+			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
-		resources.ServiceAddSelectorLabel("eventing.triggermesh.io/redis-broker", rb.Name+"-redis-broker"),
+		resources.ServiceAddSelectorLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 		resources.ServiceAddPort("httpce", 8080, 8080))
 }
 
@@ -163,11 +167,11 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 			current, err = r.client.CoreV1().Services(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-				logging.FromContext(ctx).Error("Unable to update the service", zap.String("service", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceUpdate, "Failed to update Redis broker service")
+				logging.FromContext(ctx).Error("Unable to update broker service", zap.String("service", fullname.String()), zap.Error(err))
+				rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceUpdate, "Failed to update broker service")
 
 				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceUpdate,
-					"Failed to get Redis service %s: %w", fullname, err)
+					"Failed to get broker service %s: %w", fullname, err)
 			}
 		}
 
@@ -175,10 +179,10 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 		// An error ocurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get Redis broker service")
+		rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get broker service")
 
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceGet,
-			"Failed to get Redis service %s: %w", fullname, err)
+			"Failed to get broker service %s: %w", fullname, err)
 
 	default:
 		// The object has not been found, create it.
@@ -186,15 +190,15 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create the service", zap.String("service", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceCreate, "Failed to create Redis broker service")
+			rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceCreate, "Failed to create broker service")
 
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceCreate,
-				"Failed to create Redis broker service %s: %w", fullname, err)
+				"Failed to create broker service %s: %w", fullname, err)
 		}
 	}
 
 	// Service exists and is up to date.
-	rb.Status.MarkRedisServiceReady()
+	rb.Status.MarkBrokerServiceReady()
 
 	return current, nil
 }

@@ -15,6 +15,11 @@ import (
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 )
 
+const (
+	appAnnotationValue     = "redisbroker"
+	resourceNameAnnotation = "eventing.triggermesh.io/name"
+)
+
 type Reconciler struct {
 	kubeClientSet    kubernetes.Interface
 	secretReconciler secretReconciler
