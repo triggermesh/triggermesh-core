@@ -26,13 +26,15 @@ type redisReconciler struct {
 	client           kubernetes.Interface
 	deploymentLister appsv1listers.DeploymentLister
 	serviceLister    corev1listers.ServiceLister
+	image            string
 }
 
-func newRedisReconciler(ctx context.Context, deploymentLister appsv1listers.DeploymentLister, serviceLister corev1listers.ServiceLister) redisReconciler {
+func newRedisReconciler(ctx context.Context, deploymentLister appsv1listers.DeploymentLister, serviceLister corev1listers.ServiceLister, image string) redisReconciler {
 	return redisReconciler{
 		client:           k8sclient.Get(ctx),
 		deploymentLister: deploymentLister,
 		serviceLister:    serviceLister,
+		image:            image,
 	}
 }
 
@@ -50,7 +52,7 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 	return d, svc, nil
 }
 
-func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker) *appsv1.Deployment {
+func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv1.Deployment {
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-redis-server",
 		resources.DeploymentWithMetaOptions(
 			resources.MetaAddLabel("app", "redis-server"),
@@ -58,15 +60,15 @@ func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker) *appsv1.Deployment {
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.DeploymentAddSelectorForTemplate("eventing.triggermesh.io/redis-name", rb.Name+"-redis-server"),
 		resources.DeploymentSetReplicas(1),
-		resources.DeploymentWithTemplateOption(
+		resources.DeploymentWithTemplateOptions(
 			resources.PodSpecAddContainer(
-				resources.NewContainer("redis", "redis/redis-stack-server:latest",
+				resources.NewContainer("redis", image,
 					resources.ContainerAddEnvFromValue("REDIS_ARGS", "--appendonly yes"),
 					resources.ContainerAddPort("redis", 6379)))))
 }
 
 func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, error) {
-	desired := buildRedisDeployment(rb)
+	desired := buildRedisDeployment(rb, r.image)
 	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
 	switch {
 	case err == nil:

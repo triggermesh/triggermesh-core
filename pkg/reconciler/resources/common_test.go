@@ -11,6 +11,10 @@ const (
 	tName      = "test-name"
 	tNamespace = "test-namespace"
 	tImage     = "triggermesh/test:v1"
+
+	tSecretName      = "test-secret"
+	tSecretKey       = "test-key"
+	tVolumeMountFile = "myfile"
 )
 
 var (

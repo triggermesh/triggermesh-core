@@ -61,6 +61,22 @@ func TestNewContainer(t *testing.T) {
 					},
 				},
 			}},
+		"with volume mount": {
+			options: []ContainerOption{
+				ContainerAddVolumeMount(
+					NewVolumeMount(tName, tVolumeMountFile),
+				),
+			},
+			expected: corev1.Container{
+				Name:  tName,
+				Image: tImage,
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      tName,
+						MountPath: tVolumeMountFile,
+					},
+				},
+			}},
 	}
 
 	for name, tc := range testCases {

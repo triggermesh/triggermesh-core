@@ -58,3 +58,12 @@ func ContainerAddPort(name string, containerPort int32) ContainerOption {
 		})
 	}
 }
+
+func ContainerAddVolumeMount(vm *corev1.VolumeMount) ContainerOption {
+	return func(c *corev1.Container) {
+		if c.VolumeMounts == nil {
+			c.VolumeMounts = make([]corev1.VolumeMount, 0, 1)
+		}
+		c.VolumeMounts = append(c.VolumeMounts, *vm)
+	}
+}
