@@ -8,11 +8,14 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"go.uber.org/zap"
+
+	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
@@ -52,6 +55,7 @@ func NewController(
 	secretInformer := secret.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
+	endpointsInformer := endpointsinformer.Get(ctx)
 	serviceAccountInformer := serviceaccount.Get(ctx)
 	// TODO rolebinding
 	_ = rolebinding.Get(ctx)
@@ -60,7 +64,13 @@ func NewController(
 		kubeClientSet:    kubeclient.Get(ctx),
 		secretReconciler: newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		redisReconciler:  newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), env.RedisImage),
-		brokerReconciler: newBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), env.BrokerImage),
+		brokerReconciler: brokerReconciler{
+			client:           kubeclient.Get(ctx),
+			deploymentLister: deploymentInformer.Lister(),
+			serviceLister:    serviceInformer.Lister(),
+			endpointsLister:  endpointsInformer.Lister(),
+			image:            env.BrokerImage,
+		},
 	}
 
 	impl := rbreconciler.NewImpl(ctx, r)
@@ -81,6 +91,32 @@ func NewController(
 		FilterFunc: controller.FilterController(rb),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
+	endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: func(obj interface{}) bool {
+			ep, ok := obj.(*corev1.Endpoints)
+			if !ok || ep.Labels != nil || ep.Labels[appAnnotation] == appAnnotationValue {
+				return false
+			}
+
+			return true
+		},
+		Handler: controller.HandleAll(func(obj interface{}) {
+			ep, ok := obj.(*corev1.Endpoints)
+			if !ok {
+				return
+			}
+
+			svc, err := serviceInformer.Lister().Services(ep.Namespace).Get(ep.Name)
+			if err != nil {
+				// no matter the error, if we cannot retrieve the service we cannot
+				// read the owner and enqueue the key.
+				return
+			}
+
+			impl.EnqueueControllerOf(svc)
+		}),
+	})
+
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterController(rb),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),

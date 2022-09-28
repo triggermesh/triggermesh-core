@@ -28,6 +28,9 @@ const (
 
 	ReasonFailedTriggerList     = "FailedTriggerList"
 	ReasonFailedConfigSerialize = "FailedConfigSerialize"
+
+	ReasonUnavailableEndpoints = "UnavailableEndpoints"
+	ReasonFailedEndpointsGet   = "FailedEndpointsGet"
 	// ReasonServiceUpdate       = "UpdateService"
 	// ReasonFailedServiceGet    = "FailedServiceGet"
 	// ReasonFailedServiceCreate = "FailedServiceCreate"

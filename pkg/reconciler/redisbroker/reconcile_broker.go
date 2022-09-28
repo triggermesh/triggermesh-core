@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"go.uber.org/zap"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	k8sclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/eventing/pkg/apis/duck"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -39,16 +40,8 @@ type brokerReconciler struct {
 	client           kubernetes.Interface
 	deploymentLister appsv1listers.DeploymentLister
 	serviceLister    corev1listers.ServiceLister
+	endpointsLister  corev1listers.EndpointsLister
 	image            string
-}
-
-func newBrokerReconciler(ctx context.Context, deploymentLister appsv1listers.DeploymentLister, serviceLister corev1listers.ServiceLister, image string) brokerReconciler {
-	return brokerReconciler{
-		client:           k8sclient.Get(ctx),
-		deploymentLister: deploymentLister,
-		serviceLister:    serviceLister,
-		image:            image,
-	}
 }
 
 func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, *corev1.Service, error) {
@@ -58,6 +51,12 @@ func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 	}
 
 	svc, err := r.reconcileService(ctx, rb)
+	if err != nil {
+		return d, nil, err
+	}
+
+	// update endpoint statuses
+	_, err = r.reconcileEndpoints(ctx, svc, rb)
 	if err != nil {
 		return d, nil, err
 	}
@@ -76,7 +75,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
 			resources.MetaAddLabel("component", brokerResourceSuffix),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
@@ -145,7 +144,7 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
 			resources.MetaAddLabel("component", brokerResourceSuffix),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
@@ -159,6 +158,7 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 	current, err := r.serviceLister.Services(desired.Namespace).Get(desired.Name)
 	switch {
 	case err == nil:
+		// Set Status
 		// Compare current object with desired, update if needed.
 		if !semantic.Semantic.DeepEqual(desired, current) {
 			desired.Status = current.Status
@@ -201,4 +201,32 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 	rb.Status.MarkBrokerServiceReady()
 
 	return current, nil
+}
+
+func (r *brokerReconciler) reconcileEndpoints(ctx context.Context, service *corev1.Service, rb *eventingv1alpha1.RedisBroker) (*corev1.Endpoints, error) {
+	ep, err := r.endpointsLister.Endpoints(service.Namespace).Get(service.Name)
+	switch {
+	case err == nil:
+		if duck.EndpointsAreAvailable(ep) {
+			rb.Status.MarkBrokerEndpointsTrue()
+			return ep, nil
+		}
+
+		rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for broker service are not available")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+			"Endpoints for broker service are not available %s",
+			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
+
+	case apierrs.IsNotFound(err):
+		rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for broker service do not exist")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+			"Endpoints for broker service do not exist %s",
+			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
+	}
+
+	fullname := types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name}
+	rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for broker service")
+	logging.FromContext(ctx).Error("Unable to get the service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
+	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedEndpointsGet,
+		"Failed to get broker service ednpoints %s: %w", fullname, err)
 }

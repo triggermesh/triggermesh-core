@@ -30,6 +30,7 @@ type redisReconciler struct {
 	client           kubernetes.Interface
 	deploymentLister appsv1listers.DeploymentLister
 	serviceLister    corev1listers.ServiceLister
+	endpointsLister  corev1listers.EndpointsLister
 	image            string
 }
 
@@ -53,13 +54,15 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 		return d, nil, err
 	}
 
+	// update endpoint statuses
+
 	return d, svc, nil
 }
 
 func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv1.Deployment {
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
 			resources.MetaAddLabel("component", redisResourceSuffix),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
@@ -124,7 +127,7 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel("app", appAnnotationValue),
+			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
 			resources.MetaAddLabel("component", redisResourceSuffix),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),

@@ -18,13 +18,18 @@ import (
 // RedisBrokerBroker refers to the TriggerMesh Broker that manages events on top of Redis.
 
 const (
-	RedisBrokerConditionReady                          = apis.ConditionReady
-	RedisBrokerRedisDeployment      apis.ConditionType = "RedisDeploymentReady"
-	RedisBrokerRedisService         apis.ConditionType = "RedisServiceReady"
-	RedisBrokerBrokerDeployment     apis.ConditionType = "BrokerDeploymentReady"
-	RedisBrokerBrokerService        apis.ConditionType = "BrokerServiceReady"
-	RedisBrokerConfigSecret         apis.ConditionType = "BrokerConfigSecretReady"
-	RedisBrokerConditionAddressable apis.ConditionType = "Addressable"
+	RedisBrokerConditionReady                                         = apis.ConditionReady
+	RedisBrokerRedisDeployment                     apis.ConditionType = "RedisDeploymentReady"
+	RedisBrokerRedisService                        apis.ConditionType = "RedisServiceReady"
+	RedisBrokerRedisServiceConditionEndpointsReady apis.ConditionType = "RedisEndpointsReady"
+	RedisBrokerBrokerDeployment                    apis.ConditionType = "BrokerDeploymentReady"
+	RedisBrokerBrokerService                       apis.ConditionType = "BrokerServiceReady"
+
+	// RedisBrokerBrokerServiceConditionEndpointsReady has status True when a k8s Service Endpoints
+	// are backed by at least one endpoint.
+	RedisBrokerBrokerServiceConditionEndpointsReady apis.ConditionType = "BrokerEndpointsReady"
+	RedisBrokerConfigSecret                         apis.ConditionType = "BrokerConfigSecretReady"
+	RedisBrokerConditionAddressable                 apis.ConditionType = "Addressable"
 )
 
 var redisBrokerCondSet = apis.NewLivingConditionSet(
@@ -32,6 +37,7 @@ var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerRedisService,
 	RedisBrokerBrokerDeployment,
 	RedisBrokerBrokerService,
+	RedisBrokerBrokerServiceConditionEndpointsReady,
 	RedisBrokerConfigSecret,
 
 // TODO RedisBrokerConditionAddressable,
@@ -149,8 +155,8 @@ func (bs *RedisBrokerStatus) MarkRedisServiceReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisService)
 }
 
-// Manage Redis broker state for both
-// Service and Deployment
+// Manage Redis broker state for
+// Deployment, Service and Endpoint
 
 func (bs *RedisBrokerStatus) MarkBrokerDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerDeployment, reason, messageFormat, messageA...)
@@ -187,4 +193,16 @@ func (bs *RedisBrokerStatus) MarkBrokerServiceUnknown(reason, messageFormat stri
 
 func (bs *RedisBrokerStatus) MarkBrokerServiceReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerService)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerEndpointsFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerServiceConditionEndpointsReady, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerEndpointsUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerServiceConditionEndpointsReady, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerEndpointsTrue() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerServiceConditionEndpointsReady)
 }

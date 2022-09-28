@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	appAnnotation          = "app"
 	appAnnotationValue     = "redisbroker"
 	resourceNameAnnotation = "eventing.triggermesh.io/name"
 )
