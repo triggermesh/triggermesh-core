@@ -12,7 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	corev1listers "k8s.io/client-go/listers/core/v1"
-	k8sclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/eventing/pkg/apis/duck"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
@@ -34,15 +34,6 @@ type redisReconciler struct {
 	image            string
 }
 
-func newRedisReconciler(ctx context.Context, deploymentLister appsv1listers.DeploymentLister, serviceLister corev1listers.ServiceLister, image string) redisReconciler {
-	return redisReconciler{
-		client:           k8sclient.Get(ctx),
-		deploymentLister: deploymentLister,
-		serviceLister:    serviceLister,
-		image:            image,
-	}
-}
-
 func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, *corev1.Service, error) {
 	d, err := r.reconcileDeployment(ctx, rb)
 	if err != nil {
@@ -54,7 +45,10 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 		return d, nil, err
 	}
 
-	// update endpoint statuses
+	_, err = r.reconcileEndpoints(ctx, svc, rb)
+	if err != nil {
+		return d, nil, err
+	}
 
 	return d, svc, nil
 }
@@ -183,4 +177,32 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 	rb.Status.MarkRedisServiceReady()
 
 	return current, nil
+}
+
+func (r *redisReconciler) reconcileEndpoints(ctx context.Context, service *corev1.Service, rb *eventingv1alpha1.RedisBroker) (*corev1.Endpoints, error) {
+	ep, err := r.endpointsLister.Endpoints(service.Namespace).Get(service.Name)
+	switch {
+	case err == nil:
+		if duck.EndpointsAreAvailable(ep) {
+			rb.Status.MarkRedisEndpointsTrue()
+			return ep, nil
+		}
+
+		rb.Status.MarkRedisEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for redis service are not available")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+			"Endpoints for redis service are not available %s",
+			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
+
+	case apierrs.IsNotFound(err):
+		rb.Status.MarkRedisEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for redis service do not exist")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+			"Endpoints for redis service do not exist %s",
+			types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
+	}
+
+	fullname := types.NamespacedName{Namespace: service.Namespace, Name: service.Name}
+	rb.Status.MarkRedisEndpointsUnknown(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for redis service")
+	logging.FromContext(ctx).Error("Unable to get the redis service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
+	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedEndpointsGet,
+		"Failed to get redis service ednpoints %s: %w", fullname, err)
 }

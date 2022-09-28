@@ -63,7 +63,14 @@ func NewController(
 	r := &Reconciler{
 		kubeClientSet:    kubeclient.Get(ctx),
 		secretReconciler: newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
-		redisReconciler:  newRedisReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), env.RedisImage),
+		redisReconciler: redisReconciler{
+			client:           kubeclient.Get(ctx),
+			deploymentLister: deploymentInformer.Lister(),
+			serviceLister:    serviceInformer.Lister(),
+			endpointsLister:  endpointsInformer.Lister(),
+			image:            env.RedisImage,
+		},
+
 		brokerReconciler: brokerReconciler{
 			client:           kubeclient.Get(ctx),
 			deploymentLister: deploymentInformer.Lister(),

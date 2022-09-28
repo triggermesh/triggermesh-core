@@ -18,16 +18,13 @@ import (
 // RedisBrokerBroker refers to the TriggerMesh Broker that manages events on top of Redis.
 
 const (
-	RedisBrokerConditionReady                                         = apis.ConditionReady
-	RedisBrokerRedisDeployment                     apis.ConditionType = "RedisDeploymentReady"
-	RedisBrokerRedisService                        apis.ConditionType = "RedisServiceReady"
-	RedisBrokerRedisServiceConditionEndpointsReady apis.ConditionType = "RedisEndpointsReady"
-	RedisBrokerBrokerDeployment                    apis.ConditionType = "BrokerDeploymentReady"
-	RedisBrokerBrokerService                       apis.ConditionType = "BrokerServiceReady"
-
-	// RedisBrokerBrokerServiceConditionEndpointsReady has status True when a k8s Service Endpoints
-	// are backed by at least one endpoint.
-	RedisBrokerBrokerServiceConditionEndpointsReady apis.ConditionType = "BrokerEndpointsReady"
+	RedisBrokerConditionReady                                          = apis.ConditionReady
+	RedisBrokerRedisDeployment                      apis.ConditionType = "RedisDeploymentReady"
+	RedisBrokerRedisService                         apis.ConditionType = "RedisServiceReady"
+	RedisBrokerRedisServiceEndpointsConditionReady  apis.ConditionType = "RedisEndpointsReady"
+	RedisBrokerBrokerDeployment                     apis.ConditionType = "BrokerDeploymentReady"
+	RedisBrokerBrokerService                        apis.ConditionType = "BrokerServiceReady"
+	RedisBrokerBrokerServiceEndpointsConditionReady apis.ConditionType = "BrokerEndpointsReady"
 	RedisBrokerConfigSecret                         apis.ConditionType = "BrokerConfigSecretReady"
 	RedisBrokerConditionAddressable                 apis.ConditionType = "Addressable"
 )
@@ -35,9 +32,10 @@ const (
 var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerRedisDeployment,
 	RedisBrokerRedisService,
+	RedisBrokerRedisServiceEndpointsConditionReady,
 	RedisBrokerBrokerDeployment,
 	RedisBrokerBrokerService,
-	RedisBrokerBrokerServiceConditionEndpointsReady,
+	RedisBrokerBrokerServiceEndpointsConditionReady,
 	RedisBrokerConfigSecret,
 
 // TODO RedisBrokerConditionAddressable,
@@ -155,6 +153,18 @@ func (bs *RedisBrokerStatus) MarkRedisServiceReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisService)
 }
 
+func (bs *RedisBrokerStatus) MarkRedisEndpointsFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisServiceEndpointsConditionReady, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisEndpointsUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerRedisServiceEndpointsConditionReady, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisEndpointsTrue() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerRedisServiceEndpointsConditionReady)
+}
+
 // Manage Redis broker state for
 // Deployment, Service and Endpoint
 
@@ -196,13 +206,13 @@ func (bs *RedisBrokerStatus) MarkBrokerServiceReady() {
 }
 
 func (bs *RedisBrokerStatus) MarkBrokerEndpointsFailed(reason, messageFormat string, messageA ...interface{}) {
-	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerServiceConditionEndpointsReady, reason, messageFormat, messageA...)
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerServiceEndpointsConditionReady, reason, messageFormat, messageA...)
 }
 
 func (bs *RedisBrokerStatus) MarkBrokerEndpointsUnknown(reason, messageFormat string, messageA ...interface{}) {
-	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerServiceConditionEndpointsReady, reason, messageFormat, messageA...)
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerServiceEndpointsConditionReady, reason, messageFormat, messageA...)
 }
 
 func (bs *RedisBrokerStatus) MarkBrokerEndpointsTrue() {
-	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerServiceConditionEndpointsReady)
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerServiceEndpointsConditionReady)
 }
