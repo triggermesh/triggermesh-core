@@ -55,7 +55,6 @@ func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 		return d, nil, err
 	}
 
-	// update endpoint statuses
 	_, err = r.reconcileEndpoints(ctx, svc, rb)
 	if err != nil {
 		return d, nil, err
@@ -221,12 +220,12 @@ func (r *brokerReconciler) reconcileEndpoints(ctx context.Context, service *core
 		rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for broker service do not exist")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
 			"Endpoints for broker service do not exist %s",
-			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
+			types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
 	}
 
-	fullname := types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name}
-	rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for broker service")
-	logging.FromContext(ctx).Error("Unable to get the service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
+	fullname := types.NamespacedName{Namespace: service.Namespace, Name: service.Name}
+	rb.Status.MarkBrokerEndpointsUnknown(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for broker service")
+	logging.FromContext(ctx).Error("Unable to get the broker service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
 	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedEndpointsGet,
 		"Failed to get broker service ednpoints %s: %w", fullname, err)
 }
