@@ -37,8 +37,7 @@ var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerBrokerService,
 	RedisBrokerBrokerServiceEndpointsConditionReady,
 	RedisBrokerConfigSecret,
-
-// TODO RedisBrokerConditionAddressable,
+	RedisBrokerConditionAddressable,
 )
 var redisBrokerCondSetLock = sync.RWMutex{}
 
