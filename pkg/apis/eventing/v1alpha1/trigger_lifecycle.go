@@ -131,15 +131,15 @@ func (ts *TriggerStatus) MarkSubscriptionNotConfigured() {
 		"SubscriptionNotConfigured", "Subscription has not yet been reconciled.")
 }
 
-func (ts *TriggerStatus) MarkSubscriberResolvedSucceeded() {
+func (ts *TriggerStatus) MarkTargetResolvedSucceeded() {
 	triggerCondSet.Manage(ts).MarkTrue(TriggerConditionTargetResolved)
 }
 
-func (ts *TriggerStatus) MarkSubscriberResolvedFailed(reason, messageFormat string, messageA ...interface{}) {
+func (ts *TriggerStatus) MarkTargetResolvedFailed(reason, messageFormat string, messageA ...interface{}) {
 	triggerCondSet.Manage(ts).MarkFalse(TriggerConditionTargetResolved, reason, messageFormat, messageA...)
 }
 
-func (ts *TriggerStatus) MarkSubscriberResolvedUnknown(reason, messageFormat string, messageA ...interface{}) {
+func (ts *TriggerStatus) MarkTargetResolvedUnknown(reason, messageFormat string, messageA ...interface{}) {
 	triggerCondSet.Manage(ts).MarkUnknown(TriggerConditionTargetResolved, reason, messageFormat, messageA...)
 }
 

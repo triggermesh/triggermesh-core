@@ -204,8 +204,8 @@ func (in *TriggerSpec) DeepCopy() *TriggerSpec {
 func (in *TriggerStatus) DeepCopyInto(out *TriggerStatus) {
 	*out = *in
 	in.Status.DeepCopyInto(&out.Status)
-	if in.SubscriberURI != nil {
-		in, out := &in.SubscriberURI, &out.SubscriberURI
+	if in.TargetURI != nil {
+		in, out := &in.TargetURI, &out.TargetURI
 		*out = new(apis.URL)
 		(*in).DeepCopyInto(*out)
 	}

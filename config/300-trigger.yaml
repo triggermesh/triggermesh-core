@@ -263,17 +263,17 @@ spec:
                 description: ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.
                 type: integer
                 format: int64
-              subscriberUri:
-                description: SubscriberURI is the resolved URI of the receiver for this Trigger.
+              targetUri:
+                description: TargetURI is the resolved URI of the receiver for this Trigger.
                 type: string
 
     additionalPrinterColumns:
     - name: Broker
       type: string
       jsonPath: .spec.broker
-    - name: Subscriber_URI
+    - name: Target_URI
       type: string
-      jsonPath: .status.subscriberUri
+      jsonPath: .status.targetUri
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp

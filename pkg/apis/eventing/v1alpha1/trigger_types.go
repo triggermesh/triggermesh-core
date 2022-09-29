@@ -51,7 +51,7 @@ type TriggerSpec struct {
 	// Filters is an experimental field that conforms to the CNCF CloudEvents Subscriptions
 	// API. It's an array of filter expressions that evaluate to true or false.
 	// If any filter expression in the array evaluates to false, the event MUST
-	// NOT be sent to the Subscriber. If all the filter expressions in the array
+	// NOT be sent to the target. If all the filter expressions in the array
 	// evaluate to true, the event MUST be attempted to be delivered. Absence of
 	// a filter or empty array implies a value of true. In the event of users
 	// specifying both Filter and Filters, then the latter will override the former.
@@ -78,9 +78,9 @@ type TriggerStatus struct {
 	// * Conditions - the latest available observations of a resource's current state.
 	duckv1.Status `json:",inline"`
 
-	// SubscriberURI is the resolved URI of the receiver for this Trigger.
+	// TargetURI is the resolved URI of the receiver for this Trigger.
 	// +optional
-	SubscriberURI *apis.URL `json:"subscriberUri,omitempty"`
+	TargetURI *apis.URL `json:"targetUri,omitempty"`
 
 	// DeliveryStatus contains a resolved URL to the dead letter sink address, and any other
 	// resolved delivery options.
