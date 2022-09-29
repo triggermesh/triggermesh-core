@@ -31,10 +31,9 @@ const (
 
 	ReasonUnavailableEndpoints = "UnavailableEndpoints"
 	ReasonFailedEndpointsGet   = "FailedEndpointsGet"
-	// ReasonServiceUpdate       = "UpdateService"
-	// ReasonFailedServiceGet    = "FailedServiceGet"
-	// ReasonFailedServiceCreate = "FailedServiceCreate"
-	// ReasonFailedServiceUpdate = "FailedServiceUpdate"
+
+	ReasonBrokerDoesNotExist = "BrokerDoesNotExist"
+	ReasonFailedBrokerGet    = "FailedBrokerGet"
 
 	// // ReasonBadSinkURI indicates that the URI of a sink can't be determined.
 	// ReasonBadSinkURI = "BadSinkURI"

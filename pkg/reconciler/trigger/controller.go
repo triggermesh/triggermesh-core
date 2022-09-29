@@ -8,7 +8,9 @@ import (
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/resolver"
 
+	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
 	tginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 	tgreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/trigger"
 )
@@ -19,13 +21,18 @@ func NewController(
 	ctx context.Context,
 	cmw configmap.Watcher,
 ) *controller.Impl {
-	rbInformer := tginformer.Get(ctx)
+	tginformer := tginformer.Get(ctx)
 
-	r := &Reconciler{}
+	r := &Reconciler{
+		rbLister: rbinformer.Get(ctx).Lister(),
+	}
 
 	impl := tgreconciler.NewImpl(ctx, r)
 
-	rbInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
+	r.uriResolver = resolver.NewURIResolverFromTracker(ctx, impl.Tracker)
+
+	// TODO add brokers event handlers and filter for triggers that use them.
+	tginformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
 	return impl
 }

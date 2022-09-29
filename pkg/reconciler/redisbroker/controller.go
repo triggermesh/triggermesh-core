@@ -13,6 +13,7 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
@@ -58,6 +59,7 @@ func NewController(
 	endpointsInformer := endpointsinformer.Get(ctx)
 	serviceAccountInformer := serviceaccount.Get(ctx)
 	// TODO rolebinding
+
 	_ = rolebinding.Get(ctx)
 
 	r := &Reconciler{
@@ -81,6 +83,7 @@ func NewController(
 	}
 
 	impl := rbreconciler.NewImpl(ctx, r)
+
 	rb := &eventingv1alpha1.RedisBroker{}
 	gvk := rb.GetGroupVersionKind()
 

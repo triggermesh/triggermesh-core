@@ -103,6 +103,8 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			"Failed to list triggers: %w", err)
 	}
 
+	// TODO triggers must have resolved the URI, check status.
+
 	cfg := &config.Config{}
 	for _, t := range triggers {
 		if !t.ReferencesBroker(rb) {
