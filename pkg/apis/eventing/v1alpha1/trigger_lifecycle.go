@@ -11,15 +11,13 @@ import (
 	"knative.dev/pkg/kmeta"
 )
 
-var triggerCondSet = apis.NewLivingConditionSet(TriggerConditionBroker, TriggerConditionTarget, TriggerConditionTargetResolved, TriggerConditionDeadLetterSinkResolved)
+var triggerCondSet = apis.NewLivingConditionSet(TriggerConditionBroker, TriggerConditionTargetResolved, TriggerConditionDeadLetterSinkResolved)
 
 const (
 	// TriggerConditionReady has status True when all subconditions below have been set to True.
 	TriggerConditionReady = apis.ConditionReady
 
 	TriggerConditionBroker apis.ConditionType = "BrokerReady"
-
-	TriggerConditionTarget apis.ConditionType = "TargetReady"
 
 	TriggerConditionTargetResolved apis.ConditionType = "TargetResolved"
 
@@ -98,37 +96,6 @@ func (ts *TriggerStatus) MarkBrokerUnknown(reason, messageFormat string, message
 func (ts *TriggerStatus) MarkBrokerNotConfigured() {
 	triggerCondSet.Manage(ts).MarkUnknown(TriggerConditionBroker,
 		"BrokerNotConfigured", "Broker has not yet been reconciled.")
-}
-
-func (ts *TriggerStatus) PropagateSubscriptionCondition(sc *apis.Condition) {
-	if sc == nil {
-		ts.MarkSubscriptionNotConfigured()
-		return
-	}
-
-	switch {
-	case sc.Status == corev1.ConditionUnknown:
-		ts.MarkSubscribedUnknown(sc.Reason, sc.Message)
-	case sc.Status == corev1.ConditionTrue:
-		triggerCondSet.Manage(ts).MarkTrue(TriggerConditionTarget)
-	case sc.Status == corev1.ConditionFalse:
-		ts.MarkNotSubscribed(sc.Reason, sc.Message)
-	default:
-		ts.MarkSubscribedUnknown("SubscriptionUnknown", "The status of Subscription is invalid: %v", sc.Status)
-	}
-}
-
-func (ts *TriggerStatus) MarkNotSubscribed(reason, messageFormat string, messageA ...interface{}) {
-	triggerCondSet.Manage(ts).MarkFalse(TriggerConditionTarget, reason, messageFormat, messageA...)
-}
-
-func (ts *TriggerStatus) MarkSubscribedUnknown(reason, messageFormat string, messageA ...interface{}) {
-	triggerCondSet.Manage(ts).MarkUnknown(TriggerConditionTarget, reason, messageFormat, messageA...)
-}
-
-func (ts *TriggerStatus) MarkSubscriptionNotConfigured() {
-	triggerCondSet.Manage(ts).MarkUnknown(TriggerConditionTarget,
-		"SubscriptionNotConfigured", "Subscription has not yet been reconciled.")
 }
 
 func (ts *TriggerStatus) MarkTargetResolvedSucceeded() {

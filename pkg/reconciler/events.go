@@ -35,9 +35,5 @@ const (
 	ReasonBrokerDoesNotExist = "BrokerDoesNotExist"
 	ReasonFailedBrokerGet    = "FailedBrokerGet"
 
-	// // ReasonBadSinkURI indicates that the URI of a sink can't be determined.
-	// ReasonBadSinkURI = "BadSinkURI"
-
-	// // ReasonInvalidSpec indicates that spec of a reconciled object is invalid.
-	// ReasonInvalidSpec = "InvalidSpec"
+	ReasonFailedResolveReference = "FailedResolveReference"
 )

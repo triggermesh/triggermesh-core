@@ -270,7 +270,7 @@ spec:
     additionalPrinterColumns:
     - name: Broker
       type: string
-      jsonPath: .spec.broker
+      jsonPath: .spec.broker.name
     - name: Target_URI
       type: string
       jsonPath: .status.targetUri
