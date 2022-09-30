@@ -155,7 +155,6 @@ func NewController(
 		}
 
 		return false
-
 	}
 
 	enqueueFromTrigger := func(obj interface{}) {
