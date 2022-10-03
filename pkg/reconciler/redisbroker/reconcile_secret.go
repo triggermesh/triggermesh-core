@@ -103,40 +103,44 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			"Failed to list triggers: %w", err)
 	}
 
-	// TODO triggers must have resolved the URI, check status.
-
 	cfg := &config.Config{}
 	for _, t := range triggers {
-		if !t.ReferencesBroker(rb) {
+		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
+		// or DLS exist.
+		if !t.ReferencesBroker(rb) || (t.Status.TargetURI == nil && t.Status.DeadLetterSinkURI == nil) {
 			continue
 		}
 
-		target := ""
-		if t.Spec.Target.URI != nil {
-			target = t.Spec.Target.URI.String()
-			// } else {
-			// TODO resolve target to URL
+		targetURI := ""
+		if t.Status.TargetURI != nil {
+			targetURI = t.Status.TargetURI.String()
+		} else {
+			// Configure empty URL so that all requests go to DLS when the target is
+			// not ready.
+			targetURI = "http://"
 		}
 
-		// TODO convert DeliveryOptions
 		do := &config.DeliveryOptions{}
 		if t.Spec.Delivery != nil {
 			do.Retry = t.Spec.Delivery.Retry
 			do.BackoffDelay = t.Spec.Delivery.BackoffDelay
 
 			if t.Spec.Delivery.BackoffPolicy != nil {
+				var bop config.BackoffPolicyType
 				switch *t.Spec.Delivery.BackoffPolicy {
 				case duckv1.BackoffPolicyLinear:
-					*do.BackoffPolicy = config.BackoffPolicyLinear
+					bop = config.BackoffPolicyLinear
 
 				case duckv1.BackoffPolicyExponential:
-					*do.BackoffPolicy = config.BackoffPolicyExponential
+					bop = config.BackoffPolicyLinear
 				}
+				do.BackoffPolicy = &bop
 			}
 
-			// TODO resolve reference to URI
-			uri := t.Spec.Delivery.DeadLetterSink.URI.String()
-			do.DeadLetterURL = &uri
+			if t.Status.DeadLetterSinkURI != nil {
+				uri := t.Status.DeadLetterSinkURI.String()
+				do.DeadLetterURL = &uri
+			}
 		}
 
 		trg := config.Trigger{
@@ -144,7 +148,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			Filters: t.Spec.Filters,
 			Targets: []config.Target{
 				{
-					URL:             target,
+					URL:             targetURI,
 					DeliveryOptions: do,
 				},
 			},
