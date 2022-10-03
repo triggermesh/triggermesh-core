@@ -102,14 +102,14 @@ func (r *Reconciler) resolveDLS(ctx context.Context, t *eventingv1alpha1.Trigger
 	dlsURI, err := r.uriResolver.URIFromDestinationV1(ctx, *t.Spec.Delivery.DeadLetterSink, t)
 	if err != nil {
 		logging.FromContext(ctx).Errorw("Unable to get the dead letter sink's URI", zap.Error(err))
-		t.Status.MarkTargetResolvedFailed("Unable to get the dead letter sink's URI", "%v", err)
+		t.Status.MarkDeadLetterSinkResolvedFailed("Unable to get the dead letter sink's URI", "%v", err)
 		t.Status.TargetURI = nil
 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedResolveReference,
 			"Failed to get dead letter sink's URI: %w", err)
 	}
 
 	t.Status.DeadLetterSinkURI = dlsURI
-	t.Status.MarkDeadLetterSinkNotConfigured()
+	t.Status.MarkDeadLetterSinkResolvedSucceeded()
 
 	return nil
 }
