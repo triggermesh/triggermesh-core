@@ -46,13 +46,13 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	}
 
 	// Make sure the Broker deployment for Redis exists and that it points to the Redis service.
-	_, _, err = r.brokerReconciler.reconcile(ctx, rb, redisSvc, secret)
+	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, redisSvc, secret)
 	if err != nil {
 		return err
 	}
 
-	// Set address to the Redis service.
-	rb.Status.SetAddress(apis.HTTP(network.GetServiceHostname(redisSvc.Name, redisSvc.Namespace)))
+	// Set address to the Broker service.
+	rb.Status.SetAddress(apis.HTTP(network.GetServiceHostname(brokerSvc.Name, brokerSvc.Namespace)))
 
 	return nil
 }
