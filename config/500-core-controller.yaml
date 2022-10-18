@@ -69,7 +69,7 @@ spec:
         - name: REDISBROKER_REDIS_IMAGE
           value: redis/redis-stack-server:latest
         - name: REDISBROKER_BROKER_IMAGE
-          value: pmercado/redis-broker:v0.1.0
+          value: gcr.io/triggermesh/redis-broker:dev
 
         securityContext:
           runAsNonRoot: true

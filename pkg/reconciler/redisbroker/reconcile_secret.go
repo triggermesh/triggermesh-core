@@ -6,7 +6,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/yaml"
 
-	"github.com/triggermesh/brokers/pkg/config"
+	"github.com/triggermesh/brokers/pkg/config/broker"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,7 +103,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			"Failed to list triggers: %w", err)
 	}
 
-	cfg := &config.Config{}
+	cfg := &broker.Config{}
 	for _, t := range triggers {
 		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
 		// or DLS exist.
@@ -120,19 +120,19 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			targetURI = "http://"
 		}
 
-		do := &config.DeliveryOptions{}
+		do := &broker.DeliveryOptions{}
 		if t.Spec.Delivery != nil {
 			do.Retry = t.Spec.Delivery.Retry
 			do.BackoffDelay = t.Spec.Delivery.BackoffDelay
 
 			if t.Spec.Delivery.BackoffPolicy != nil {
-				var bop config.BackoffPolicyType
+				var bop broker.BackoffPolicyType
 				switch *t.Spec.Delivery.BackoffPolicy {
 				case duckv1.BackoffPolicyLinear:
-					bop = config.BackoffPolicyLinear
+					bop = broker.BackoffPolicyLinear
 
 				case duckv1.BackoffPolicyExponential:
-					bop = config.BackoffPolicyLinear
+					bop = broker.BackoffPolicyLinear
 				}
 				do.BackoffPolicy = &bop
 			}
@@ -143,19 +143,16 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			}
 		}
 
-		trg := config.Trigger{
-			Name:    t.Name,
+		trg := broker.Trigger{
 			Filters: t.Spec.Filters,
-			Targets: []config.Target{
-				{
-					URL:             targetURI,
-					DeliveryOptions: do,
-				},
+			Target: broker.Target{
+				URL:             targetURI,
+				DeliveryOptions: do,
 			},
 		}
 
 		// Add Trigger data to config
-		cfg.Triggers = append(cfg.Triggers, trg)
+		cfg.Triggers[t.Name] = trg
 	}
 
 	// add user/password
