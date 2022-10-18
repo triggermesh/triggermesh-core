@@ -104,7 +104,9 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			"Failed to list triggers: %w", err)
 	}
 
-	cfg := &broker.Config{}
+	cfg := &broker.Config{
+		Triggers: make(map[string]broker.Trigger),
+	}
 	for _, t := range triggers {
 		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
 		// or DLS exist.
