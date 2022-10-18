@@ -508,6 +508,8 @@ github.com/triggermesh/brokers v0.0.0-20220926134808-88d6a8629e30 h1:EjHSGHBT/7h
 github.com/triggermesh/brokers v0.0.0-20220926134808-88d6a8629e30/go.mod h1:64gU9A1hlgsU6/51B3h7eDsg7KI4BvuzAE9uJ8h6V9U=
 github.com/triggermesh/brokers v0.0.0-20221018093436-f87a18b58712 h1:ARMQw1DtiJwfXI8Dx9pxgzSZti+iOw2znopgmmqOunI=
 github.com/triggermesh/brokers v0.0.0-20221018093436-f87a18b58712/go.mod h1:qcsxTLxVIa1R0XLm1g/0eMf8RpMI7EYlHiEU3gP+llg=
+github.com/triggermesh/brokers v0.0.0-20221018150809-c9d0300abb23 h1:Vun0NLmhusgnV1ohaeIVQy7NEMzqIpWIWNDDkxnrJkw=
+github.com/triggermesh/brokers v0.0.0-20221018150809-c9d0300abb23/go.mod h1:qcsxTLxVIa1R0XLm1g/0eMf8RpMI7EYlHiEU3gP+llg=
 github.com/valyala/bytebufferpool v1.0.0 h1:GqA5TC/0021Y/b9FG4Oi9Mr3q7XYx6KllzawFIhcdPw=
 github.com/valyala/bytebufferpool v1.0.0/go.mod h1:6bBcMArwyJ5K/AmCkWv1jt77kVWyCJ6HpOuEn7z0Csc=
 github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
