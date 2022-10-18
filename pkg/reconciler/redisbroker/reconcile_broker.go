@@ -84,7 +84,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 			resources.PodSpecAddVolume(v),
 			resources.PodSpecAddContainer(
 				resources.NewContainer("broker", image,
-					resources.ContainerAddArgs("start --redis.address "+redisService+" --config-path "+configMountedPath),
+					resources.ContainerAddArgs("start --redis.address "+redisService+" --broker-config-path "+configMountedPath),
 					resources.ContainerAddVolumeMount(vm),
 				),
 			),
