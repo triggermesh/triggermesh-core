@@ -1,0 +1,53 @@
+name: CodeQL scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+  - cron: '0 0 * * 0'  # At 00:00 every Sunday
+jobs:
+
+  codeql:
+    runs-on: ubuntu-latest
+    env:
+      # Force CodeQL to run the extraction on the files compiled by our custom
+      # build command, as opposed to letting the autobuilder figure it out.
+      # This approach is more efficient because TriggerMesh is composed of
+      # multiple small programs.
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
+
+    permissions:
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19.x
+
+    - name: Go caches
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ github.job }}-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ github.job }}-${{ runner.os }}-go-
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: go
+
+    - name: Build Go code
+      run: go build ./cmd/...
+
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
