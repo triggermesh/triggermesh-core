@@ -46,6 +46,61 @@ spec:
           spec:
             description: RedisBrokerSpec defines the desired state of RedisBroker
             type: object
+            properties:
+              redis:
+                description: Redis options.
+                type: object
+                properties:
+                  connection:
+                    description: Redis connection.
+                    type: object
+                    properties:
+                      url:
+                        description: URL of the Redis instance.
+                        type: string
+                        format: url
+                        pattern: ^https?:\/\/.+$
+                      username:
+                        description: Redis username.
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            description: A reference to a Kubernetes Secret object.
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+                      password:
+                        description: Redis password.
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            description: A reference to a Kubernetes Secret object.
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+                    required:
+                    - url
+
+                  stream:
+                    description: Redis stream to be used by the broker.
+                    type: string
+                  streamMaxLen:
+                    description: Maximum number of items (approximate) the Redis stream can host.
+                    type: integer
+
+              broker:
+                description: Broker options.
+                type: object
+                properties:
+                  port:
+                    description: Broker HTTP port.
+                    type: integer
           status:
             description: Status represents the current state of the Broker. This data may be out of date.
             type: object
