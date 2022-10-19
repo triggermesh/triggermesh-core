@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	configSecretFile = "config"
+	configSecretFile = "broker.config"
 	configSecretPath = "/opt/broker"
 
 	brokerResourceSuffix = "redisbroker-broker"
@@ -84,7 +84,10 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 			resources.PodSpecAddVolume(v),
 			resources.PodSpecAddContainer(
 				resources.NewContainer("broker", image,
-					resources.ContainerAddArgs("start --redis.address "+redisService+" --broker-config-path "+configMountedPath),
+					resources.ContainerAddArgs("start"+
+						" --redis.address "+redisService+
+						" --broker-config-path "+configMountedPath+
+						" --redis.stream "+rb.Namespace+"."+rb.Name),
 					resources.ContainerAddVolumeMount(vm),
 				),
 			),

@@ -4,9 +4,10 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
+	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
@@ -43,7 +44,40 @@ var (
 	_ duckv1.KRShaped = (*RedisBroker)(nil)
 )
 
+type RedisConnection struct {
+	// Redis URL.
+	URL apis.URL `json:"url"`
+	// Redis username.
+	Username SecretValueFromSource `json:"username,omitempty"`
+	// Redis password.
+	Password SecretValueFromSource `json:"password,omitempty"`
+}
+
+type Redis struct {
+	// Redis connection data.
+	Connection RedisConnection `json:"connection,omitempty"`
+
+	// Stream name used by the broker.
+	Stream *string `json:"stream,omitempty"`
+
+	// Maximum number of items the stream can host.
+	StreamMaxLen *int `json:"streamMaxLen,omitempty"`
+}
+
+// SecretValueFromSource represents the source of a secret value
+type SecretValueFromSource struct {
+	// The Secret key to select from.
+	SecretKeyRef *corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
+}
+
+type Broker struct {
+	Port *int `json:"port,omitempty"`
+}
+
 type RedisBrokerSpec struct {
+	Redis *Redis `json:"redis,omitempty"`
+
+	Broker Broker `json:"broker,omitempty"`
 }
 
 // RedisBrokerStatus represents the current state of a Redis broker.
