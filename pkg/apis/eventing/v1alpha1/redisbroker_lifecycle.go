@@ -27,6 +27,8 @@ const (
 	RedisBrokerBrokerServiceEndpointsConditionReady apis.ConditionType = "BrokerEndpointsReady"
 	RedisBrokerConfigSecret                         apis.ConditionType = "BrokerConfigSecretReady"
 	RedisBrokerConditionAddressable                 apis.ConditionType = "Addressable"
+
+	RedisBrokerReasonUserProvided string = "ReasonUserProvidedRedis"
 )
 
 var redisBrokerCondSet = apis.NewLivingConditionSet(
@@ -57,6 +59,14 @@ func (b *RedisBroker) GetConditionSet() apis.ConditionSet {
 	defer redisBrokerCondSetLock.RUnlock()
 
 	return redisBrokerCondSet
+}
+
+// IsExternalRedis returns if the Redis instance is user provided.
+func (b *RedisBroker) IsUserProvidedRedis() bool {
+	if b.Spec.Redis != nil && b.Spec.Redis.Connection != nil {
+		return true
+	}
+	return false
 }
 
 // GetConditionSet retrieves the condition set for this resource.
@@ -214,4 +224,10 @@ func (bs *RedisBrokerStatus) MarkBrokerEndpointsUnknown(reason, messageFormat st
 
 func (bs *RedisBrokerStatus) MarkBrokerEndpointsTrue() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerServiceEndpointsConditionReady)
+}
+
+func (bs *RedisBrokerStatus) MarkRedisUserProvided() {
+	redisBrokerCondSet.Manage(bs).MarkTrueWithReason(RedisBrokerRedisDeployment, RedisBrokerReasonUserProvided, "Redis instance is externally provided")
+	redisBrokerCondSet.Manage(bs).MarkTrueWithReason(RedisBrokerRedisService, RedisBrokerReasonUserProvided, "Redis instance is externally provided")
+	redisBrokerCondSet.Manage(bs).MarkTrueWithReason(RedisBrokerRedisServiceEndpointsConditionReady, RedisBrokerReasonUserProvided, "Redis instance is externally provided")
 }

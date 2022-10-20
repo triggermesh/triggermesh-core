@@ -36,6 +36,25 @@ func ContainerAddEnvFromValue(name, value string) ContainerOption {
 	}
 }
 
+func ContainerAddEnvVarFromSecret(name, secretName, secretKey string) ContainerOption {
+	return func(c *corev1.Container) {
+		if c.Env == nil {
+			c.Env = make([]corev1.EnvVar, 0, 1)
+		}
+		c.Env = append(c.Env, corev1.EnvVar{
+			Name: name,
+			ValueFrom: &corev1.EnvVarSource{
+				SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: secretName,
+					},
+					Key: secretKey,
+				},
+			},
+		})
+	}
+}
+
 func ContainerAddArgs(s string) ContainerOption {
 	return func(c *corev1.Container) {
 		args := strings.Split(s, " ")

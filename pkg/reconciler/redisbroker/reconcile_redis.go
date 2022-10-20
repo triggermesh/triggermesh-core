@@ -35,6 +35,12 @@ type redisReconciler struct {
 }
 
 func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, *corev1.Service, error) {
+	if rb.IsUserProvidedRedis() {
+		// Nothing to do but mark the status for each of the elements reconciled.
+		rb.Status.MarkRedisUserProvided()
+		return nil, nil, nil
+	}
+
 	d, err := r.reconcileDeployment(ctx, rb)
 	if err != nil {
 		return nil, nil, err
