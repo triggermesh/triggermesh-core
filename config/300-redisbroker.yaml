@@ -58,8 +58,6 @@ spec:
                       url:
                         description: URL of the Redis instance.
                         type: string
-                        format: url
-                        pattern: ^https?:\/\/.+$
                       username:
                         description: Redis username.
                         type: object
