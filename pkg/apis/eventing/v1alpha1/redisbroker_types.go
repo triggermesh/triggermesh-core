@@ -7,7 +7,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
@@ -46,16 +45,24 @@ var (
 
 type RedisConnection struct {
 	// Redis URL.
-	URL apis.URL `json:"url"`
+	URL string `json:"url"`
+
 	// Redis username.
-	Username SecretValueFromSource `json:"username,omitempty"`
+	Username *SecretValueFromSource `json:"username,omitempty"`
+
 	// Redis password.
-	Password SecretValueFromSource `json:"password,omitempty"`
+	Password *SecretValueFromSource `json:"password,omitempty"`
+
+	// Use TLS enctrypted connection.
+	TLSEnabled *bool `json:"tlsEnabled,omitempty"`
+
+	// Skip TLS certificate verification.
+	TLSSkipVerify *bool `json:"tlsSkipVerify,omitempty"`
 }
 
 type Redis struct {
 	// Redis connection data.
-	Connection RedisConnection `json:"connection,omitempty"`
+	Connection *RedisConnection `json:"connection,omitempty"`
 
 	// Stream name used by the broker.
 	Stream *string `json:"stream,omitempty"`
@@ -67,7 +74,7 @@ type Redis struct {
 // SecretValueFromSource represents the source of a secret value
 type SecretValueFromSource struct {
 	// The Secret key to select from.
-	SecretKeyRef *corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
+	SecretKeyRef corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
 }
 
 type Broker struct {

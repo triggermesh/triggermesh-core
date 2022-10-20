@@ -70,7 +70,51 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 	vm := resources.NewVolumeMount("config", configSecretPath,
 		resources.VolumeMountWithReadOnlyOption(true))
 
-	redisService := fmt.Sprintf("%s:%d", redis.Name, redis.Spec.Ports[0].Port)
+	var stream string
+	if rb.Spec.Redis != nil && rb.Spec.Redis.Stream != nil && *rb.Spec.Redis.Stream != "" {
+		stream = *rb.Spec.Redis.Stream
+	} else {
+		stream = rb.Namespace + "." + rb.Name
+	}
+
+	opts := []resources.ContainerOption{
+		resources.ContainerAddArgs("start"),
+		resources.ContainerAddVolumeMount(vm),
+		resources.ContainerAddEnvFromValue("BROKER_CONFIG_PATH", configMountedPath),
+		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
+	}
+
+	if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
+		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream))
+	}
+
+	if rb.IsUserProvidedRedis() {
+		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL))
+
+		if rb.Spec.Redis.Connection.Username != nil {
+			opts = append(opts, resources.ContainerAddEnvVarFromSecret("REDIS_USERNAME",
+				rb.Spec.Redis.Connection.Username.SecretKeyRef.Name,
+				rb.Spec.Redis.Connection.Username.SecretKeyRef.Key))
+		}
+
+		if rb.Spec.Redis.Connection.Password != nil {
+			opts = append(opts, resources.ContainerAddEnvVarFromSecret("REDIS_PASSWORD",
+				rb.Spec.Redis.Connection.Password.SecretKeyRef.Name,
+				rb.Spec.Redis.Connection.Password.SecretKeyRef.Key))
+		}
+
+		if rb.Spec.Redis.Connection.TLSEnabled != nil && *rb.Spec.Redis.Connection.TLSEnabled {
+			opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_TLS_ENABLED", "true"))
+		}
+
+		if rb.Spec.Redis.Connection.TLSSkipVerify != nil && *rb.Spec.Redis.Connection.TLSSkipVerify {
+			opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", "true"))
+		}
+
+	} else {
+		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_ADDRESS",
+			fmt.Sprintf("%s:%d", redis.Name, redis.Spec.Ports[0].Port)))
+	}
 
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
@@ -83,15 +127,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 		resources.DeploymentWithTemplateOptions(
 			resources.PodSpecAddVolume(v),
 			resources.PodSpecAddContainer(
-				resources.NewContainer("broker", image,
-					resources.ContainerAddArgs("start"+
-						" --redis.address "+redisService+
-						" --broker-config-path "+configMountedPath+
-						" --redis.stream "+rb.Namespace+"."+rb.Name),
-					resources.ContainerAddVolumeMount(vm),
-				),
-			),
-		))
+				resources.NewContainer("broker", image, opts...))))
 }
 
 func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, error) {

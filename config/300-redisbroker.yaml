@@ -82,6 +82,12 @@ spec:
                                 type: string
                               key:
                                 type: string
+                      tlsEnabled:
+                        description: Use TLS enctrypted Redis connection.
+                        type: boolean
+                      tlsSkipVerify:
+                        description: Skip TLS certificate verification.
+                        type: boolean
                     required:
                     - url
 
