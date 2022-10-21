@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl
+spec:
+  containers:
+  - image: radial/busyboxplus:curl
+    name: curl
+    stdin: true
+    tty: true

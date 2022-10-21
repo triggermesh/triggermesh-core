@@ -1,0 +1,26 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: Trigger
+metadata:
+  name: demo
+spec:
+  broker:
+    kind: RedisBroker
+    group: eventing.triggermesh.io
+    name: demo
+  filters:
+  - any:
+    - exact:
+        type: demo.type1
+  target:
+    ref:
+      kind: Service
+      group: v1
+      name: sockeye-target
+
+  delivery:
+    retry: 3
+    deadLetterSink:
+      ref:
+        kind: Service
+        group: v1
+        name: sockeye-deadlettersink
