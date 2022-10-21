@@ -1,0 +1,4 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: RedisBroker
+metadata:
+  name: demo
