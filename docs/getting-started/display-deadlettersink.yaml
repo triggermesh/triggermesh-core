@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sockeye-target
+  name: display-deadlettersink
 spec:
   selector:
     matchLabels:
-      app: sockeye-target
+      app: display-deadlettersink
   template:
     metadata:
       labels:
-        app: sockeye-target
+        app: display-deadlettersink
     spec:
       containers:
-      - name: sockeye
-        image: docker.io/n3wscott/sockeye:v0.7.0@sha256:e603d8494eeacce966e57f8f508e4c4f6bebc71d095e3f5a0a1abaf42c5f0e48
+      - name: display
+        image: gcr.io/knative-releases/knative.dev/eventing-contrib/cmd/event_display
         ports:
         - containerPort: 8080
 
@@ -22,11 +22,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sockeye-target
+  name: display-deadlettersink
 spec:
   type: NodePort
   selector:
-    app: sockeye-target
+    app: display-deadlettersink
   ports:
   - protocol: TCP
     port: 8080

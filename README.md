@@ -36,7 +36,7 @@ To be able to use the broker we will create a Pod that allow us to send events i
 kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/curl.yaml
 ```
 
-It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200`.
+It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200` which means that the broker has received it and will try to deliver them to configured triggers.
 
 ```console
 kubectl exec -ti curl -- curl -v http://demo-redisbroker-broker.default.svc.cluster.local:8080/ \
@@ -46,18 +46,18 @@ kubectl exec -ti curl -- curl -v http://demo-redisbroker-broker.default.svc.clus
     -H "Ce-Type: demo.type1" \
     -H "Ce-Source: curl" \
     -H "Content-Type: application/json" \
-    -d '{"hello":"world"}'
+    -d '{"test1":"no trigger configured yet"}'
 ```
 
-Sockeye is a popular CloudEvents consumer that exposes a web interface with the list of events received while the page is open. We will be creating 2 instances of sockeye, one as the target for consumed events and another one for the Dead Letter Sink.
-A Dead Letter Sink, abbreviated DLS is a destination that consumes events that a subscription was not able to deliver.
+Unfortunately we haven't configured any trigger yet, which means any ingested event will not be delivered. `event_display` is a CloudEvents consumer that logs to console the list of events received. We will be creating 2 instances of `event_display`, one as the target for consumed events and another one for the Dead Letter Sink.
+A Dead Letter Sink, abbreviated DLS is a destination that consumes events that a subscription was not able to deliver to the intended target.
 
 ```console
 # Target service
-kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/sockeye-target.yaml
+kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml
 
 # DLS service
-kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/sockeye-deadlettersink.yaml
+kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-deadlettersink.yaml
 ```
 
 The Trigger object configures the broker to consume events and send them to a target. The Trigger object can include filters that select which events should be forwarded to the target, and delivery options to configure retries and fallback targets when the event cannot be delivered.
@@ -66,9 +66,9 @@ The Trigger object configures the broker to consume events and send them to a ta
 kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/trigger.yaml
 ```
 
-The Trigger created above filters by CloudEvents with `type: demo.type1`, if delivery fails it will issue 3 retries and then forward the CloudEvent to the `sokceye-deadlettersink` service.
+The Trigger created above filters by CloudEvents containing `type: demo.type1` attribute and delivers them to `display-target` service, if delivery fails it will issue 3 retries and then forward the CloudEvent to the `display-deadlettersink` service.
 
-Using the `curl` Pod again we can send this CloudEvent to the broker, that will pass the filtering and forward the event to the `sockeye-target` service.
+Using the `curl` Pod again we can send this CloudEvent to the broker.
 
 ```console
 kubectl exec -ti curl -- curl -v http://demo-redisbroker-broker.default.svc.cluster.local:8080/ \
@@ -78,7 +78,76 @@ kubectl exec -ti curl -- curl -v http://demo-redisbroker-broker.default.svc.clus
     -H "Ce-Type: demo.type1" \
     -H "Ce-Source: curl" \
     -H "Content-Type: application/json" \
-    -d '{"hello":"world"}'
+    -d '{"test 2":"message for display target"}'
+```
+
+The target display Pod will show the delivered event.
+
+```console
+kubectl logs -l app=display-target --tail 100
+
+☁️  cloudevents.Event
+Validation: valid
+Context Attributes,
+  specversion: 1.0
+  type: demo.type1
+  source: curl
+  id: 1234-abcd
+  datacontenttype: application/json
+Extensions,
+  triggermeshbackendid: 1666613846441-0
+Data,
+  {
+    "test": "value2"
+  }
+```
+
+To simulate a target failure we will reconfigure the target display service to make it point to a non existing Pod set:
+
+```console
+k patch service display-target --patch '{"spec": {"selector":{"app":"foo"}}}'
+```
+
+Any event that pass the filter will try to be sent to the target, and upon failing will be delivered to the DLS.
+
+```console
+kubectl exec -ti curl -- curl -v http://demo-redisbroker-broker.default.svc.cluster.local:8080/ \
+    -X POST \
+    -H "Ce-Id: 1234-abcd" \
+    -H "Ce-Specversion: 1.0" \
+    -H "Ce-Type: demo.type1" \
+    -H "Ce-Source: curl" \
+    -H "Content-Type: application/json" \
+    -d '{"test 3":"not delivered, will be sent to DLS"}'
+```
+
+```console
+kubectl logs -l app=display-deadlettersink --tail 100
+
+☁️  cloudevents.Event
+Validation: valid
+Context Attributes,
+  specversion: 1.0
+  type: demo.type1
+  source: curl
+  id: 1234-abcd
+  datacontenttype: application/json
+Extensions,
+  triggermeshbackendid: 1666613846441-0
+Data,
+  {
+    "test": "value3"
+  }
+```
+
+To clean up the getting started guide, delete each of the created assets:
+
+```console
+kubectl delete -f \
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/trigger.yaml\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-deadlettersink.yaml\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/broker.yaml\
 ```
 
 ## Installation
