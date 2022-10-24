@@ -13,14 +13,15 @@ spec:
         type: demo.type1
   target:
     ref:
+      apiVersion: v1
       kind: Service
-      group: v1
-      name: sockeye-target
+      name: display-target
 
   delivery:
     retry: 3
     deadLetterSink:
       ref:
         kind: Service
-        group: v1
-        name: sockeye-deadlettersink
+        apiVersion: v1
+        name: display-deadlettersink
+
