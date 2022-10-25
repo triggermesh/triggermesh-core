@@ -120,7 +120,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 		} else {
 			// Configure empty URL so that all requests go to DLS when the target is
 			// not ready.
-			targetURI = "http://"
+			targetURI = ""
 		}
 
 		do := &broker.DeliveryOptions{}

@@ -86,3 +86,9 @@ func ContainerAddVolumeMount(vm *corev1.VolumeMount) ContainerOption {
 		c.VolumeMounts = append(c.VolumeMounts, *vm)
 	}
 }
+
+func ContainerWithImagePullPolicy(policy corev1.PullPolicy) ContainerOption {
+	return func(c *corev1.Container) {
+		c.ImagePullPolicy = policy
+	}
+}
