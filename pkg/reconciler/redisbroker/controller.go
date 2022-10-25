@@ -35,8 +35,9 @@ import (
 // github.com/kelseyhightower/envconfig. If this configuration cannot be extracted, then
 // NewController will panic.
 type envConfig struct {
-	RedisImage  string `envconfig:"REDISBROKER_REDIS_IMAGE" required:"true"`
-	BrokerImage string `envconfig:"REDISBROKER_BROKER_IMAGE" required:"true"`
+	RedisImage            string `envconfig:"REDISBROKER_REDIS_IMAGE" required:"true"`
+	BrokerImage           string `envconfig:"REDISBROKER_BROKER_IMAGE" required:"true"`
+	BrokerImagePullPolicy string `envconfig:"REDISBROKER_BROKER_IMAGE_PULL_POLICY" default:"IfNotPresent"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -79,6 +80,7 @@ func NewController(
 			serviceLister:    serviceInformer.Lister(),
 			endpointsLister:  endpointsInformer.Lister(),
 			image:            env.BrokerImage,
+			pullPolicy:       corev1.PullPolicy(env.BrokerImagePullPolicy),
 		},
 	}
 

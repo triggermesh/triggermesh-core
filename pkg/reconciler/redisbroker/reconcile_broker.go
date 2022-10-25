@@ -42,6 +42,7 @@ type brokerReconciler struct {
 	serviceLister    corev1listers.ServiceLister
 	endpointsLister  corev1listers.EndpointsLister
 	image            string
+	pullPolicy       corev1.PullPolicy
 }
 
 func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, *corev1.Service, error) {
@@ -63,7 +64,7 @@ func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 	return d, svc, nil
 }
 
-func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret, image string) *appsv1.Deployment {
+func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret, image string, pullPolicy corev1.PullPolicy) *appsv1.Deployment {
 
 	v := resources.NewVolume("config",
 		resources.VolumeFromSecretOption(secret.Name, configSecretKey, configSecretFile))
@@ -82,6 +83,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 		resources.ContainerAddVolumeMount(vm),
 		resources.ContainerAddEnvFromValue("BROKER_CONFIG_PATH", configMountedPath),
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
+		resources.ContainerWithImagePullPolicy(pullPolicy),
 	}
 
 	if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
@@ -131,7 +133,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 }
 
 func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, error) {
-	desired := buildBrokerDeployment(rb, redis, secret, r.image)
+	desired := buildBrokerDeployment(rb, redis, secret, r.image, r.pullPolicy)
 	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
 	switch {
 	case err == nil:

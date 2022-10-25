@@ -144,10 +144,11 @@ To clean up the getting started guide, delete each of the created assets:
 
 ```console
 kubectl delete -f \
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/trigger.yaml\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-deadlettersink.yaml\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/broker.yaml\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/trigger.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-deadlettersink.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/broker.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/curl.yaml
 ```
 
 ## Installation
