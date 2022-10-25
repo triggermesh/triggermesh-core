@@ -105,7 +105,7 @@ Data,
 To simulate a target failure we will reconfigure the target display service to make it point to a non existing Pod set:
 
 ```console
-k patch service display-target --patch '{"spec": {"selector":{"app":"foo"}}}'
+kubectl delete -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml
 ```
 
 Any event that pass the filter will try to be sent to the target, and upon failing will be delivered to the DLS.
@@ -143,9 +143,9 @@ Data,
 To clean up the getting started guide, delete each of the created assets:
 
 ```console
+# Removal of display-target not in this list, since it was deleted previously.
 kubectl delete -f \
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/trigger.yaml,\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-target.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/display-deadlettersink.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/broker.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/getting-started/curl.yaml
