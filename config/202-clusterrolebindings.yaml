@@ -18,6 +18,25 @@ roleRef:
 
 ---
 
+# Controller must be granted the same permissions it assigns
+# to the broker deployment.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggermesh-core-controller-for-brokers
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+subjects:
+- kind: ServiceAccount
+  name: triggermesh-core-controller
+  namespace: triggermesh
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: triggermesh-broker
+
+---
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	redisResourceSuffix = "redisbroker-redis"
+	redisResourceSuffix = "rb-redis"
 )
 
 type redisReconciler struct {
@@ -63,7 +63,7 @@ func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel("component", "redis-deployment"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
@@ -128,7 +128,7 @@ func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel("component", "redis-service"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),

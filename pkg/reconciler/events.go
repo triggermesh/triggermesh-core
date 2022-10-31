@@ -22,6 +22,8 @@ const (
 
 	ReasonFailedServiceAccountGet    = "FailedServiceAccountGet"
 	ReasonFailedServiceAccountCreate = "FailedServiceAccountCreate"
+	ReasonFailedRoleBindingGet       = "FailedRoleBindingGet"
+	ReasonFailedRoleBindingCreate    = "FailedRoleBindingCreate"
 
 	ReasonServiceCreate       = "CreateService"
 	ReasonServiceUpdate       = "UpdateService"

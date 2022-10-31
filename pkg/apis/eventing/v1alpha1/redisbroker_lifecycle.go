@@ -24,6 +24,7 @@ const (
 	RedisBrokerRedisServiceEndpointsConditionReady  apis.ConditionType = "RedisEndpointsReady"
 	RedisBrokerBrokerDeployment                     apis.ConditionType = "BrokerDeploymentReady"
 	RedisBrokerBrokerServiceAccount                 apis.ConditionType = "BrokerServiceAccountReady"
+	RedisBrokerBrokerRoleBinding                    apis.ConditionType = "RedisBrokerBrokerRoleBinding"
 	RedisBrokerBrokerService                        apis.ConditionType = "BrokerServiceReady"
 	RedisBrokerBrokerServiceEndpointsConditionReady apis.ConditionType = "BrokerEndpointsReady"
 	RedisBrokerConfigSecret                         apis.ConditionType = "BrokerConfigSecretReady"
@@ -37,6 +38,7 @@ var redisBrokerCondSet = apis.NewLivingConditionSet(
 	RedisBrokerRedisService,
 	RedisBrokerRedisServiceEndpointsConditionReady,
 	RedisBrokerBrokerServiceAccount,
+	RedisBrokerBrokerRoleBinding,
 	RedisBrokerBrokerDeployment,
 	RedisBrokerBrokerService,
 	RedisBrokerBrokerServiceEndpointsConditionReady,
@@ -124,7 +126,6 @@ func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
 }
 
-
 // Manage Redis server state for both
 // Service and Deployment
 
@@ -138,6 +139,18 @@ func (bs *RedisBrokerStatus) MarkBrokerServiceAccountUnknown(reason, messageForm
 
 func (bs *RedisBrokerStatus) MarkBrokerServiceAccountReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerServiceAccount)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerRoleBindingFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerRoleBinding, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerRoleBindingUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(RedisBrokerBrokerRoleBinding, reason, messageFormat, messageA...)
+}
+
+func (bs *RedisBrokerStatus) MarkBrokerRoleBindingReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerRoleBinding)
 }
 
 func (bs *RedisBrokerStatus) MarkRedisDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
