@@ -3,7 +3,6 @@ package redisbroker
 import (
 	"context"
 	"fmt"
-	"path"
 
 	"go.uber.org/zap"
 
@@ -26,14 +25,7 @@ import (
 )
 
 const (
-	configSecretFile = "broker.config"
-	configSecretPath = "/opt/broker"
-
-	brokerResourceSuffix = "redisbroker-broker"
-)
-
-var (
-	configMountedPath = path.Join(configSecretPath, configSecretFile)
+	brokerResourceSuffix = "rb-broker"
 )
 
 type brokerReconciler struct {
@@ -45,8 +37,8 @@ type brokerReconciler struct {
 	pullPolicy       corev1.PullPolicy
 }
 
-func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, *corev1.Service, error) {
-	d, err := r.reconcileDeployment(ctx, rb, redis, secret)
+func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, *corev1.Service, error) {
+	d, err := r.reconcileDeployment(ctx, rb, sa, redis, secret)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -64,13 +56,7 @@ func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 	return d, svc, nil
 }
 
-func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret, image string, pullPolicy corev1.PullPolicy) *appsv1.Deployment {
-
-	v := resources.NewVolume("config",
-		resources.VolumeFromSecretOption(secret.Name, configSecretKey, configSecretFile))
-	vm := resources.NewVolumeMount("config", configSecretPath,
-		resources.VolumeMountWithReadOnlyOption(true))
-
+func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount, redis *corev1.Service, secret *corev1.Secret, image string, pullPolicy corev1.PullPolicy) *appsv1.Deployment {
 	var stream string
 	if rb.Spec.Redis != nil && rb.Spec.Redis.Stream != nil && *rb.Spec.Redis.Stream != "" {
 		stream = *rb.Spec.Redis.Stream
@@ -80,8 +66,10 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 
 	opts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
-		resources.ContainerAddVolumeMount(vm),
-		resources.ContainerAddEnvFromValue("BROKER_CONFIG_PATH", configMountedPath),
+		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
+		resources.ContainerAddEnvFromValue("BROKER_CONFIG_KUBERNETES_SECRET_NAME", secret.Name),
+		resources.ContainerAddEnvFromValue("BROKER_CONFIG_KUBERNETES_SECRET_KEY", configSecretKey),
+
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 	}
@@ -121,19 +109,19 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, redis *corev1.Servi
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", brokerResourceSuffix),
+			resources.MetaAddLabel("component", "broker-deployment"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 		resources.DeploymentSetReplicas(1),
 		resources.DeploymentWithTemplateOptions(
-			resources.PodSpecAddVolume(v),
+			resources.PodSpecWithServiceAccountName(sa.Name),
 			resources.PodSpecAddContainer(
 				resources.NewContainer("broker", image, opts...))))
 }
 
-func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, error) {
-	desired := buildBrokerDeployment(rb, redis, secret, r.image, r.pullPolicy)
+func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, error) {
+	desired := buildBrokerDeployment(rb, sa, redis, secret, r.image, r.pullPolicy)
 	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
 	switch {
 	case err == nil:
@@ -154,7 +142,7 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current deployment.
+		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
 		rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get broker deployment")
@@ -185,7 +173,7 @@ func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", brokerResourceSuffix),
+			resources.MetaAddLabel("component", "broker-service"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
@@ -216,7 +204,7 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current object.
+		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
 		rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get broker service")

@@ -152,15 +152,25 @@ rules:
 
 ---
 
-# This role is used to grant receive adapters read-only access to per-component
-# configurations such as logging, observability and tracing.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: triggermesh-config-watcher
+  name: triggermesh-broker
   labels:
     app.kubernetes.io/part-of: triggermesh
 rules:
+
+# Read broker configuration, including credentials.
+- apiGroups:
+  - ''
+  resources:
+  - secrets
+  verbs:
+  - list
+  - watch
+  - get
+
+# Read observability configuration.
 - apiGroups:
   - ''
   resources:
@@ -169,56 +179,3 @@ rules:
   - list
   - watch
   - get
-
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: awssnssource-adapter
-  labels:
-    app.kubernetes.io/part-of: triggermesh
-rules:
-
-# Record Kubernetes events
-- apiGroups:
-  - ''
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-  - update
-
-# Read Source resources and update their statuses
-- apiGroups:
-  - sources.triggermesh.io
-  resources:
-  - awssnssources
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - sources.triggermesh.io
-  resources:
-  - awssnssources/status
-  verbs:
-  - patch
-
-# Read credentials
-- apiGroups:
-  - ''
-  resources:
-  - secrets
-  verbs:
-  - get
-
-# Acquire leases for leader election
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - create
-  - update

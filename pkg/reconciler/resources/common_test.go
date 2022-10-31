@@ -15,6 +15,10 @@ const (
 	tSecretName      = "test-secret"
 	tSecretKey       = "test-key"
 	tVolumeMountFile = "myfile"
+
+	tServiceAccountName = "test-sa-name"
+	tRoleName = "test-role-name"
+	tRoleBindingName = "test-rolebinding-name"
 )
 
 var (

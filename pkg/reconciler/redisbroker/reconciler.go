@@ -28,6 +28,7 @@ type Reconciler struct {
 	secretReconciler secretReconciler
 	redisReconciler  redisReconciler
 	brokerReconciler brokerReconciler
+	saReconciler     serviceAccountReconciler
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.RedisBroker) reconciler.Event {
@@ -45,8 +46,14 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 		return err
 	}
 
+	// Make sure the Broker service account and roles exists.
+	sa, _, err := r.saReconciler.reconcile(ctx, rb)
+	if err != nil {
+		return err
+	}
+
 	// Make sure the Broker deployment for Redis exists and that it points to the Redis service.
-	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, redisSvc, secret)
+	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, sa, redisSvc, secret)
 	if err != nil {
 		return err
 	}

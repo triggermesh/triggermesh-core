@@ -21,6 +21,7 @@ import (
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	"knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
+	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
@@ -59,7 +60,7 @@ func NewController(
 	serviceInformer := service.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
 	serviceAccountInformer := serviceaccount.Get(ctx)
-	// TODO rolebinding
+	roleBindingsInformer := rolebindingsinformer.Get(ctx)
 
 	_ = rolebinding.Get(ctx)
 
@@ -72,6 +73,13 @@ func NewController(
 			serviceLister:    serviceInformer.Lister(),
 			endpointsLister:  endpointsInformer.Lister(),
 			image:            env.RedisImage,
+		},
+
+
+		saReconciler: serviceAccountReconciler{
+			client:           kubeclient.Get(ctx),
+			serviceAccountLister: serviceAccountInformer.Lister(),
+			roleBindingLister: roleBindingsInformer.Lister(),
 		},
 
 		brokerReconciler: brokerReconciler{
@@ -128,10 +136,13 @@ func NewController(
 			impl.EnqueueControllerOf(svc)
 		}),
 	})
-
 	serviceAccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterController(rb),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
+	})
+	roleBindingsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: controller.FilterController(rb),
+		Handler: controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	// Filter Triggers that reference a Redis broker.

@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	redisResourceSuffix = "redisbroker-redis"
+	redisResourceSuffix = "rb-redis"
 )
 
 type redisReconciler struct {
@@ -63,7 +63,7 @@ func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel("component", "redis-deployment"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
@@ -97,7 +97,7 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current deployment.
+		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
 		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
@@ -128,7 +128,7 @@ func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", redisResourceSuffix),
+			resources.MetaAddLabel("component", "redis-service"),
 			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
@@ -158,7 +158,7 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current object.
+		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
 		rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get Redis service")

@@ -206,6 +206,13 @@ func TestNewPodSpec(t *testing.T) {
 					},
 				},
 			}},
+		"with serviceAccount name": {
+			options: []PodSpecOption{
+				PodSpecWithServiceAccountName(tServiceAccountName),
+			},
+			expected: corev1.PodSpec{
+				ServiceAccountName: tServiceAccountName,
+			}},
 	}
 
 	for name, tc := range testCases {

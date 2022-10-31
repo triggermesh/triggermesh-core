@@ -96,3 +96,9 @@ func PodSpecAddVolume(v *corev1.Volume) PodSpecOption {
 		ps.Volumes = append(ps.Volumes, *v)
 	}
 }
+
+func PodSpecWithServiceAccountName(saName string) PodSpecOption {
+	return func(ps *corev1.PodSpec) {
+		ps.ServiceAccountName = saName
+	}
+}
