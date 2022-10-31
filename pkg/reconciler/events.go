@@ -20,6 +20,9 @@ const (
 	ReasonFailedDeploymentCreate = "FailedDeploymentCreate"
 	ReasonFailedDeploymentUpdate = "FailedDeploymentUpdate"
 
+	ReasonFailedServiceAccountGet    = "FailedServiceAccountGet"
+	ReasonFailedServiceAccountCreate = "FailedServiceAccountCreate"
+
 	ReasonServiceCreate       = "CreateService"
 	ReasonServiceUpdate       = "UpdateService"
 	ReasonFailedServiceGet    = "FailedServiceGet"

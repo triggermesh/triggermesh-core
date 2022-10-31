@@ -97,7 +97,7 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current deployment.
+		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
 		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
@@ -158,7 +158,7 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current object.
+		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
 		rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get Redis service")

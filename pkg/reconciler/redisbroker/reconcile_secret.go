@@ -68,7 +68,7 @@ func (r *secretReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error ocurred retrieving current deployment.
+		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
 		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
