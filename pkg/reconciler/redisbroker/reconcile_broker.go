@@ -29,13 +29,12 @@ const (
 )
 
 type brokerReconciler struct {
-	client               kubernetes.Interface
-	deploymentLister     appsv1listers.DeploymentLister
-	serviceAccountLister corev1listers.ServiceAccountLister
-	serviceLister        corev1listers.ServiceLister
-	endpointsLister      corev1listers.EndpointsLister
-	image                string
-	pullPolicy           corev1.PullPolicy
+	client           kubernetes.Interface
+	deploymentLister appsv1listers.DeploymentLister
+	serviceLister    corev1listers.ServiceLister
+	endpointsLister  corev1listers.EndpointsLister
+	image            string
+	pullPolicy       corev1.PullPolicy
 }
 
 func (r *brokerReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, *corev1.Service, error) {
