@@ -39,7 +39,7 @@ kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/
 It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200` which means that the broker has received it and will try to deliver them to configured triggers.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080/ \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -111,7 +111,7 @@ kubectl delete -f https://raw.githubusercontent.com/triggermesh/triggermesh-core
 Any event that pass the filter will try to be sent to the target, and upon failing will be delivered to the DLS.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080/ \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
