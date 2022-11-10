@@ -5,8 +5,10 @@ package redisbroker
 
 import (
 	"context"
+	"strconv"
 
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"knative.dev/pkg/apis"
@@ -59,7 +61,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	}
 
 	// Set address to the Broker service.
-	rb.Status.SetAddress(apis.HTTP(network.GetServiceHostname(brokerSvc.Name, brokerSvc.Namespace)))
+	rb.Status.SetAddress(getSericeAddress(brokerSvc))
 
 	return nil
+}
+
+func getSericeAddress(svc *v1.Service) *apis.URL {
+	var port string
+	if svc.Spec.Ports[0].Port != 80 {
+		port = ":" + strconv.Itoa(int(svc.Spec.Ports[0].Port))
+	}
+
+	return apis.HTTP(
+		network.GetServiceHostname(svc.Name, svc.Namespace) + port)
 }

@@ -26,6 +26,8 @@ import (
 
 const (
 	brokerResourceSuffix = "rb-broker"
+
+	defaultBrokerServicePort int32 = 80
 )
 
 type brokerReconciler struct {
@@ -173,6 +175,11 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 }
 
 func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
+	brokerPort := defaultBrokerServicePort
+	if rb.Spec.Broker.Port != nil {
+		brokerPort = int32(*rb.Spec.Broker.Port)
+	}
+
 	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
 			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
@@ -181,7 +188,7 @@ func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
 		resources.ServiceAddSelectorLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
-		resources.ServiceAddPort("httpce", 8080, 8080))
+		resources.ServiceAddPort("httpce", brokerPort, 8080))
 }
 
 func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*corev1.Service, error) {
