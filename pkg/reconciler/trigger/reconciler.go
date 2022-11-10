@@ -81,10 +81,6 @@ func (r *Reconciler) resolveTarget(ctx context.Context, t *eventingv1alpha1.Trig
 			"Failed to get target's URI: %w", err)
 	}
 
-	if targetURI.URL().Port() == "" {
-		targetURI.Host = targetURI.Host + ":8080"
-	}
-
 	t.Status.TargetURI = targetURI
 	t.Status.MarkTargetResolvedSucceeded()
 
@@ -111,10 +107,6 @@ func (r *Reconciler) resolveDLS(ctx context.Context, t *eventingv1alpha1.Trigger
 		t.Status.TargetURI = nil
 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedResolveReference,
 			"Failed to get dead letter sink's URI: %w", err)
-	}
-
-	if dlsURI.URL().Port() == "" {
-		dlsURI.Host = dlsURI.Host + ":8080"
 	}
 
 	t.Status.DeadLetterSinkURI = dlsURI
