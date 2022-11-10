@@ -95,6 +95,7 @@ func (r *Reconciler) resolveDLS(ctx context.Context, t *eventingv1alpha1.Trigger
 	if t.Spec.Delivery == nil || t.Spec.Delivery.DeadLetterSink == nil {
 		t.Status.DeadLetterSinkURI = nil
 		t.Status.MarkDeadLetterSinkNotConfigured()
+		return nil
 	}
 
 	if t.Spec.Delivery.DeadLetterSink.Ref != nil && t.Spec.Delivery.DeadLetterSink.Ref.Namespace == "" {
