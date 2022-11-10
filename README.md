@@ -71,7 +71,7 @@ The Trigger created above filters by CloudEvents containing `type: demo.type1` a
 Using the `curl` Pod again we can send this CloudEvent to the broker.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080/ \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
