@@ -66,13 +66,16 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceA
 
 	opts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
+		resources.ContainerAddEnvFromValue("BROKER_NAME", rb.Name),
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
-		resources.ContainerAddEnvFromValue("BROKER_CONFIG_KUBERNETES_SECRET_NAME", secret.Name),
-		resources.ContainerAddEnvFromValue("BROKER_CONFIG_KUBERNETES_SECRET_KEY", configSecretKey),
+		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
+		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", configSecretKey),
 
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 	}
+
+	// TODO KUBERNETES_OBSERVABILITY_CONFIGMAP_NAME
 
 	if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
 		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream))
