@@ -48,9 +48,11 @@ func (r *serviceAccountReconciler) reconcile(ctx context.Context, rb *eventingv1
 func buildBrokerServiceAccount(rb *eventingv1alpha1.RedisBroker) *corev1.ServiceAccount {
 	return resources.NewServiceAccount(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceAccountWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "broker-serviceaccount"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "broker-serviceaccount"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())))
 }
 
@@ -93,9 +95,11 @@ func (r *serviceAccountReconciler) reconcileServiceAccount(ctx context.Context, 
 func buildBrokerRoleBinding(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount) *rbacv1.RoleBinding {
 	return resources.NewRoleBinding(rb.Namespace, rb.Name+"-"+brokerResourceSuffix, BrokerDeploymentRole, sa.Name,
 		resources.RoleBindingWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "broker-rolebinding"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "broker-rolebinding"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())))
 }
 

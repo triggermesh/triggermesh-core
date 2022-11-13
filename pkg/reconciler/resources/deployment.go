@@ -59,10 +59,28 @@ func DeploymentAddSelectorForTemplate(key, value string) DeploymentOption {
 	}
 }
 
-func DeploymentWithTemplateOptions(opts ...PodSpecOption) DeploymentOption {
+type PodTemplateSpecOption func(*corev1.PodTemplateSpec)
+
+func DeploymentWithTemplateSpecOptions(opts ...PodTemplateSpecOption) DeploymentOption {
 	return func(d *appsv1.Deployment) {
 		for _, opt := range opts {
-			opt(&d.Spec.Template.Spec)
+			opt(&d.Spec.Template)
+		}
+	}
+}
+
+func PodTemplateSpecWithMetaOptions(opts ...MetaOption) PodTemplateSpecOption {
+	return func(pts *corev1.PodTemplateSpec) {
+		for _, opt := range opts {
+			opt(&pts.ObjectMeta)
+		}
+	}
+}
+
+func PodTemplateSpecWithPodSpecOptions(opts ...PodSpecOption) PodTemplateSpecOption {
+	return func(pts *corev1.PodTemplateSpec) {
+		for _, opt := range opts {
+			opt(&pts.Spec)
 		}
 	}
 }

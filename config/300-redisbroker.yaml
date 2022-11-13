@@ -105,6 +105,16 @@ spec:
                   port:
                     description: Broker HTTP port.
                     type: integer
+                  observability:
+                    description: Observability parameters for the Broker.
+                    type: object
+                    properties:
+                      valueFromConfigMap:
+                        description: ConfigMap that contains the observability parameters.
+                        type: string
+                    required:
+                    - valueFromConfigMap
+
           status:
             description: Status represents the current state of the Broker. This data may be out of date.
             type: object

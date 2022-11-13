@@ -33,7 +33,9 @@ func TestNewDeployment(t *testing.T) {
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOptions(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
+				DeploymentWithTemplateSpecOptions(
+					PodTemplateSpecWithPodSpecOptions(
+						PodSpecAddContainer(NewContainer("container-name", "my-image")))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -64,7 +66,9 @@ spec:
 					MetaAddOwner(tOwner, appsv1.SchemeGroupVersion.WithKind("Deployment"))),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOptions(PodSpecAddContainer(NewContainer("container-name", "my-image"))),
+				DeploymentWithTemplateSpecOptions(
+					PodTemplateSpecWithPodSpecOptions(
+						PodSpecAddContainer(NewContainer("container-name", "my-image")))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -99,10 +103,10 @@ spec:
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOptions(PodSpecAddContainer(
-					NewContainer("container-name", "my-image",
-						ContainerAddEnvFromValue("MYENV", "env-value"),
-					))),
+				DeploymentWithTemplateSpecOptions(
+					PodTemplateSpecWithPodSpecOptions(
+						(PodSpecAddContainer(NewContainer("container-name", "my-image",
+							ContainerAddEnvFromValue("MYENV", "env-value")))))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -134,10 +138,11 @@ spec:
 				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
 				DeploymentAddSelectorForTemplate("app", "my-app"),
 				DeploymentSetReplicas(1),
-				DeploymentWithTemplateOptions(PodSpecAddContainer(
-					NewContainer("container-name", "my-image",
-						ContainerAddPort("myport", 12345),
-					))),
+				DeploymentWithTemplateSpecOptions(
+					PodTemplateSpecWithPodSpecOptions(
+						PodSpecAddContainer(
+							NewContainer("container-name", "my-image",
+								ContainerAddPort("myport", 12345))))),
 			},
 			expected: `
 apiVersion: apps/v1
@@ -163,6 +168,42 @@ spec:
         ports:
         - name: myport
           containerPort: 12345
+`},
+		"with-pod-meta": {
+			options: []DeploymentOption{
+				DeploymentWithMetaOptions(MetaAddLabel("app", "controller-my-app")),
+				DeploymentAddSelectorForTemplate("app", "my-app"),
+				DeploymentSetReplicas(1),
+				DeploymentWithTemplateSpecOptions(
+					PodTemplateSpecWithMetaOptions(
+						MetaAddLabel("pod-label", "pod-label-value"),
+					),
+					PodTemplateSpecWithPodSpecOptions(
+						PodSpecAddContainer(
+							NewContainer("container-name", "my-image")))),
+			},
+			expected: `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-name
+  namespace: test-namespace
+  labels:
+    app: controller-my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+        pod-label: pod-label-value
+    spec:
+      containers:
+      - name: container-name
+        image: my-image
 `}}
 
 	for name, tc := range testCases {
