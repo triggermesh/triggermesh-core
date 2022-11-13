@@ -30,6 +30,7 @@ import (
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
 	trginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisbroker"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
 // envConfig will be used to extract the required environment variables using
@@ -75,11 +76,10 @@ func NewController(
 			image:            env.RedisImage,
 		},
 
-
 		saReconciler: serviceAccountReconciler{
-			client:           kubeclient.Get(ctx),
+			client:               kubeclient.Get(ctx),
 			serviceAccountLister: serviceAccountInformer.Lister(),
-			roleBindingLister: roleBindingsInformer.Lister(),
+			roleBindingLister:    roleBindingsInformer.Lister(),
 		},
 
 		brokerReconciler: brokerReconciler{
@@ -114,7 +114,7 @@ func NewController(
 	endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			ep, ok := obj.(*corev1.Endpoints)
-			if !ok || ep.Labels != nil || ep.Labels[appAnnotation] == appAnnotationValue {
+			if !ok || ep.Labels != nil || ep.Labels[resources.AppNameLabel] == appAnnotationValue {
 				return false
 			}
 
@@ -142,7 +142,7 @@ func NewController(
 	})
 	roleBindingsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterController(rb),
-		Handler: controller.HandleAll(impl.EnqueueControllerOf),
+		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
 	// Filter Triggers that reference a Redis broker.

@@ -8,6 +8,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
+// Kubernetes recommended labels
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
+const (
+	// appNameLabel is the name of the application.
+	AppNameLabel = "app.kubernetes.io/name"
+	// appInstanceLabel is a unique name identifying the instance of an application.
+	AppInstanceLabel = "app.kubernetes.io/instance"
+	// appComponentLabel is the component within the architecture.
+	AppComponentLabel = "app.kubernetes.io/component"
+	// appPartOfLabel is the name of a higher level application this one is part of.
+	AppPartOfLabel = "app.kubernetes.io/part-of"
+	// appManagedByLabel is the tool being used to manage the operation of an application.
+	AppManagedByLabel = "app.kubernetes.io/managed-by"
+)
+
+// Common label values
+const (
+	PartOf    = "triggermesh"
+	ManagedBy = "triggermesh-core"
+)
+
 type MetaOption func(*metav1.ObjectMeta)
 
 func NewMeta(ns, name string, opts ...MetaOption) *metav1.ObjectMeta {

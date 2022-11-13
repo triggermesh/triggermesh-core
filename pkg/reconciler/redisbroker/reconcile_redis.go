@@ -62,17 +62,25 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv1.Deployment {
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "redis-deployment"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "redis-deployment"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
+		resources.DeploymentAddSelectorForTemplate(resources.AppComponentLabel, "redis-deployment"),
+		resources.DeploymentAddSelectorForTemplate(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
 		resources.DeploymentSetReplicas(1),
-		resources.DeploymentWithTemplateOptions(
-			resources.PodSpecAddContainer(
-				resources.NewContainer("redis", image,
-					resources.ContainerAddEnvFromValue("REDIS_ARGS", "--appendonly yes"),
-					resources.ContainerAddPort("redis", 6379)))))
+		resources.DeploymentWithTemplateSpecOptions(
+			resources.PodTemplateSpecWithMetaOptions(
+				resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+				resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			),
+			resources.PodTemplateSpecWithPodSpecOptions(
+				resources.PodSpecAddContainer(
+					resources.NewContainer("redis", image,
+						resources.ContainerAddEnvFromValue("REDIS_ARGS", "--appendonly yes"),
+						resources.ContainerAddPort("redis", 6379))))))
 }
 
 func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, error) {
@@ -127,12 +135,15 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "redis-service"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "redis-service"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
-		resources.ServiceAddSelectorLabel(resourceNameAnnotation, rb.Name+"-"+redisResourceSuffix),
+		resources.ServiceAddSelectorLabel(resources.AppComponentLabel, "redis-deployment"),
+		resources.ServiceAddSelectorLabel(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
 		resources.ServiceAddPort("redis", 6379, 6379))
 }
 

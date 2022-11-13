@@ -3,6 +3,7 @@ package redisbroker
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -27,7 +28,8 @@ import (
 const (
 	brokerResourceSuffix = "rb-broker"
 
-	defaultBrokerServicePort int32 = 80
+	defaultBrokerServicePort = 80
+	metricsServicePort       = 9090
 )
 
 type brokerReconciler struct {
@@ -68,16 +70,20 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceA
 
 	opts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
+		resources.ContainerAddEnvFromValue("PORT", strconv.Itoa(int(defaultBrokerServicePort))),
 		resources.ContainerAddEnvFromValue("BROKER_NAME", rb.Name),
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", configSecretKey),
-
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
+		resources.ContainerAddPort("httpce", defaultBrokerServicePort),
+		resources.ContainerAddPort("metrics", metricsServicePort),
 	}
 
-	// TODO KUBERNETES_OBSERVABILITY_CONFIGMAP_NAME
+	if rb.Spec.Broker.Observability != nil && rb.Spec.Broker.Observability.ValueFromConfigMap != "" {
+		opts = append(opts, resources.ContainerAddEnvFromValue("KUBERNETES_OBSERVABILITY_CONFIGMAP_NAME", rb.Spec.Broker.Observability.ValueFromConfigMap))
+	}
 
 	if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
 		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream))
@@ -113,16 +119,25 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceA
 
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "broker-deployment"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "broker-deployment"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.DeploymentAddSelectorForTemplate(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
+		resources.DeploymentAddSelectorForTemplate(resources.AppComponentLabel, "broker-deployment"),
+		resources.DeploymentAddSelectorForTemplate(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
 		resources.DeploymentSetReplicas(1),
-		resources.DeploymentWithTemplateOptions(
-			resources.PodSpecWithServiceAccountName(sa.Name),
-			resources.PodSpecAddContainer(
-				resources.NewContainer("broker", image, opts...))))
+		resources.DeploymentWithTemplateSpecOptions(
+			// Needed for prometheus PodMonitor.
+			resources.PodTemplateSpecWithMetaOptions(
+				resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+				resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			),
+			resources.PodTemplateSpecWithPodSpecOptions(
+				resources.PodSpecWithServiceAccountName(sa.Name),
+				resources.PodSpecAddContainer(
+					resources.NewContainer("broker", image, opts...)))))
 }
 
 func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount, redis *corev1.Service, secret *corev1.Secret) (*appsv1.Deployment, error) {
@@ -177,18 +192,21 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	brokerPort := defaultBrokerServicePort
 	if rb.Spec.Broker.Port != nil {
-		brokerPort = int32(*rb.Spec.Broker.Port)
+		brokerPort = *rb.Spec.Broker.Port
 	}
 
 	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, appAnnotationValue),
-			resources.MetaAddLabel("component", "broker-service"),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "broker-service"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
-		resources.ServiceAddSelectorLabel(resourceNameAnnotation, rb.Name+"-"+brokerResourceSuffix),
-		resources.ServiceAddPort("httpce", brokerPort, 8080))
+		resources.ServiceAddSelectorLabel(resources.AppComponentLabel, "broker-deployment"),
+		resources.ServiceAddSelectorLabel(resources.AppInstanceLabel, rb.Name+"-"+brokerResourceSuffix),
+		resources.ServiceAddPort("httpce", int32(brokerPort), defaultBrokerServicePort))
 }
 
 func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*corev1.Service, error) {

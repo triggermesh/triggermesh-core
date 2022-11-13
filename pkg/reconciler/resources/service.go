@@ -46,7 +46,7 @@ func ServiceAddSelectorLabel(key, value string) ServiceOption {
 	}
 }
 
-func ServiceAddPort(name string, port int32, targetPort int) ServiceOption {
+func ServiceAddPort(name string, port int32, targetPort int32) ServiceOption {
 	return func(s *corev1.Service) {
 		if s.Spec.Ports == nil {
 			s.Spec.Ports = make([]corev1.ServicePort, 0, 1)
@@ -55,7 +55,7 @@ func ServiceAddPort(name string, port int32, targetPort int) ServiceOption {
 		s.Spec.Ports = append(s.Spec.Ports, corev1.ServicePort{
 			Name:       name,
 			Port:       port,
-			TargetPort: intstr.FromInt(targetPort),
+			TargetPort: intstr.FromInt(int(targetPort)),
 		})
 	}
 }

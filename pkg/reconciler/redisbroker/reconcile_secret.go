@@ -27,7 +27,10 @@ import (
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
 
-const configSecretKey = "config"
+const (
+	secretResourceSuffix = "rb-config"
+	configSecretKey      = "config"
+)
 
 type secretReconciler struct {
 	client        kubernetes.Interface
@@ -158,7 +161,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 		cfg.Triggers[t.Name] = trg
 	}
 
-	// add user/password
+	// TODO add user/password
 
 	b, err := yaml.Marshal(cfg)
 	if err != nil {
@@ -169,10 +172,13 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 			"Failed to serialize configuration: %w", err)
 	}
 
-	return resources.NewSecret(rb.Namespace, rb.Name,
+	return resources.NewSecret(rb.Namespace, rb.Name+"-"+secretResourceSuffix,
 		resources.SecretWithMetaOptions(
-			resources.MetaAddLabel(appAnnotation, redisResourceSuffix),
-			resources.MetaAddLabel(resourceNameAnnotation, rb.Name+"-"+"redisbroker-config"),
+			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppComponentLabel, "broker-config"),
+			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
+			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+secretResourceSuffix),
 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
 		resources.SecretSetData(configSecretKey, b)), nil
 }
