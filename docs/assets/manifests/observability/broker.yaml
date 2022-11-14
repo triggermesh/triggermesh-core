@@ -1,0 +1,9 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: RedisBroker
+metadata:
+  name: metrics-demo
+spec:
+  broker:
+    observability:
+      valueFromConfigMap: metrics-demo-observability
+

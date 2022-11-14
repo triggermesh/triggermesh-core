@@ -1,0 +1,19 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: Trigger
+metadata:
+  name: metrics-demo
+spec:
+  broker:
+    kind: RedisBroker
+    group: eventing.triggermesh.io
+    name: metrics-demo
+  filters:
+  - any:
+    - prefix:
+        type: demo.
+  target:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: display-target
+
