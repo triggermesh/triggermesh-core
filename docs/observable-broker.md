@@ -120,7 +120,7 @@ We will create a target service and a Trigger pointing to it in order to gather 
 kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/display-target.yaml
 
 # Trigger using event display service
-kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started/trigger.yaml
+kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/observability/trigger.yaml
 ```
 
 The Trigger configures a filter that will deliver any event whose type is prefixed `demo.`
@@ -154,7 +154,7 @@ To clean up the getting started guide, delete each of the created assets:
 # Removal of display-target not in this list, since it was deleted previously.
 kubectl delete -f \
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/observability/trigger.yaml,\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/display-deadlettersink.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/display-target.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/observability/broker.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/observability/config-observability.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/curl.yaml
