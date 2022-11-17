@@ -126,8 +126,7 @@ func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
 }
 
-// Manage Redis server state for both
-// Service and Deployment
+// Manage Broker's service account and rolebinding.
 
 func (bs *RedisBrokerStatus) MarkBrokerServiceAccountFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerServiceAccount, reason, messageFormat, messageA...)
@@ -152,6 +151,9 @@ func (bs *RedisBrokerStatus) MarkBrokerRoleBindingUnknown(reason, messageFormat 
 func (bs *RedisBrokerStatus) MarkBrokerRoleBindingReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerRoleBinding)
 }
+
+// Manage Redis server state for both
+// Service and Deployment
 
 func (bs *RedisBrokerStatus) MarkRedisDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)

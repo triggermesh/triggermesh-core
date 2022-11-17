@@ -4,6 +4,14 @@
 
 package v1alpha1
 
+// MemoryBrokerListerExpansion allows custom methods to be added to
+// MemoryBrokerLister.
+type MemoryBrokerListerExpansion interface{}
+
+// MemoryBrokerNamespaceListerExpansion allows custom methods to be added to
+// MemoryBrokerNamespaceLister.
+type MemoryBrokerNamespaceListerExpansion interface{}
+
 // RedisBrokerListerExpansion allows custom methods to be added to
 // RedisBrokerLister.
 type RedisBrokerListerExpansion interface{}

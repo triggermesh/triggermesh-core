@@ -14,6 +14,7 @@ import (
 
 type EventingV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	MemoryBrokersGetter
 	RedisBrokersGetter
 	TriggersGetter
 }
@@ -21,6 +22,10 @@ type EventingV1alpha1Interface interface {
 // EventingV1alpha1Client is used to interact with features provided by the eventing.triggermesh.io group.
 type EventingV1alpha1Client struct {
 	restClient rest.Interface
+}
+
+func (c *EventingV1alpha1Client) MemoryBrokers(namespace string) MemoryBrokerInterface {
+	return newMemoryBrokers(c, namespace)
 }
 
 func (c *EventingV1alpha1Client) RedisBrokers(namespace string) RedisBrokerInterface {

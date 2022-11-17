@@ -86,12 +86,6 @@ build: $(COMMANDS)  ## Build all artifacts
 $(filter-out $(CUSTOM_BUILD_BINARIES), $(COMMANDS)): ## Build artifact
 	$(GO) build -ldflags "$(LDFLAGS_STATIC)" -o $(BIN_OUTPUT_DIR)/$@ ./cmd/$@
 
-confluenttarget-adapter:
-	CGO_ENABLED=1 $(GO) build -ldflags "$(LDFLAGS_STATIC)" -o $(BIN_OUTPUT_DIR)/$@ ./cmd/$@
-
-dataweavetransformation-adapter: ## Builds DataWeave
-	$(GO) build -ldflags "$(LDFLAGS)" -o $(BIN_OUTPUT_DIR)/$@ ./cmd/$@
-
 deploy: ## Deploy TriggerMesh stack to default Kubernetes cluster
 	$(KO) resolve -f $(BASE_DIR)/config > $(BASE_DIR)/triggermesh-$(IMAGE_TAG).yaml
 	@for component in $(CUSTOM_BUILD_IMAGES); do \
