@@ -57,6 +57,17 @@ func (t *RedisBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
 }
 
+// GetReconcilableBrokerStatus returns a status interface that allows generic reconciler
+// to manage it.
+func (t *RedisBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
+	return &t.Status
+}
+
+// GetOwnedObjectsPrefix returns a prefix string to be used for created/owned objects.
+func (t *RedisBroker) GetOwnedObjectsPrefix() string {
+	return "rb"
+}
+
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
 func (b *RedisBroker) GetConditionSet() apis.ConditionSet {
 	redisBrokerCondSetLock.RLock()

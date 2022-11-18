@@ -7,7 +7,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
-	"knative.dev/pkg/kmeta"
 )
 
 // +genclient
@@ -36,8 +35,8 @@ type MemoryBroker struct {
 var (
 	// Make sure this is a kubernetes object.
 	_ runtime.Object = (*MemoryBroker)(nil)
-	// Check that we can create OwnerReferences with this object.
-	_ kmeta.OwnerRefable = (*MemoryBroker)(nil)
+	// Check that we can reconcile this object as a Broker.
+	_ ReconcilableBroker = (*MemoryBroker)(nil)
 	// Check that the type conforms to the duck Knative Resource shape.
 	_ duckv1.KRShaped = (*MemoryBroker)(nil)
 )

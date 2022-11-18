@@ -20,7 +20,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
@@ -74,7 +74,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceA
 		resources.ContainerAddEnvFromValue("BROKER_NAME", rb.Name),
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
-		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", configSecretKey),
+		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", common.ConfigSecretKey),
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 		resources.ContainerAddPort("httpce", defaultBrokerServicePort),
@@ -119,7 +119,7 @@ func buildBrokerDeployment(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceA
 
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "broker-deployment"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -154,9 +154,9 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 				logging.FromContext(ctx).Error("Unable to update broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-				rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentUpdate, "Failed to update broker deployment")
+				rb.Status.MarkBrokerDeploymentFailed(common.ReasonFailedDeploymentUpdate, "Failed to update broker deployment")
 
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentUpdate,
+				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentUpdate,
 					"Failed to get broker deployment %s: %w", fullname, err)
 			}
 		}
@@ -165,9 +165,9 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-		rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get broker deployment")
+		rb.Status.MarkBrokerDeploymentFailed(common.ReasonFailedDeploymentGet, "Failed to get broker deployment")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentGet,
 			"Failed to get broker deployment %s: %w", fullname, err)
 
 	default:
@@ -176,9 +176,9 @@ func (r *brokerReconciler) reconcileDeployment(ctx context.Context, rb *eventing
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create broker deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-			rb.Status.MarkBrokerDeploymentFailed(reconciler.ReasonFailedDeploymentCreate, "Failed to create broker deployment")
+			rb.Status.MarkBrokerDeploymentFailed(common.ReasonFailedDeploymentCreate, "Failed to create broker deployment")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentCreate,
 				"Failed to create broker deployment %s: %w", fullname, err)
 		}
 	}
@@ -197,7 +197,7 @@ func buildBrokerService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 
 	return resources.NewService(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "broker-service"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -224,9 +224,9 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 				logging.FromContext(ctx).Error("Unable to update broker service", zap.String("service", fullname.String()), zap.Error(err))
-				rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceUpdate, "Failed to update broker service")
+				rb.Status.MarkBrokerServiceFailed(common.ReasonFailedServiceUpdate, "Failed to update broker service")
 
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceUpdate,
+				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceUpdate,
 					"Failed to get broker service %s: %w", fullname, err)
 			}
 		}
@@ -235,9 +235,9 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
-		rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get broker service")
+		rb.Status.MarkBrokerServiceFailed(common.ReasonFailedServiceGet, "Failed to get broker service")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceGet,
 			"Failed to get broker service %s: %w", fullname, err)
 
 	default:
@@ -246,9 +246,9 @@ func (r *brokerReconciler) reconcileService(ctx context.Context, rb *eventingv1a
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create the service", zap.String("service", fullname.String()), zap.Error(err))
-			rb.Status.MarkBrokerServiceFailed(reconciler.ReasonFailedServiceCreate, "Failed to create broker service")
+			rb.Status.MarkBrokerServiceFailed(common.ReasonFailedServiceCreate, "Failed to create broker service")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceCreate,
 				"Failed to create broker service %s: %w", fullname, err)
 		}
 	}
@@ -268,21 +268,21 @@ func (r *brokerReconciler) reconcileEndpoints(ctx context.Context, service *core
 			return ep, nil
 		}
 
-		rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for broker service are not available")
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+		rb.Status.MarkBrokerEndpointsFailed(common.ReasonUnavailableEndpoints, "Endpoints for broker service are not available")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonUnavailableEndpoints,
 			"Endpoints for broker service are not available %s",
 			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
 
 	case apierrs.IsNotFound(err):
-		rb.Status.MarkBrokerEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for broker service do not exist")
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+		rb.Status.MarkBrokerEndpointsFailed(common.ReasonUnavailableEndpoints, "Endpoints for broker service do not exist")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonUnavailableEndpoints,
 			"Endpoints for broker service do not exist %s",
 			types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
 	}
 
 	fullname := types.NamespacedName{Namespace: service.Namespace, Name: service.Name}
-	rb.Status.MarkBrokerEndpointsUnknown(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for broker service")
+	rb.Status.MarkBrokerEndpointsUnknown(common.ReasonFailedEndpointsGet, "Could not retrieve endpoints for broker service")
 	logging.FromContext(ctx).Error("Unable to get the broker service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
-	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedEndpointsGet,
+	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedEndpointsGet,
 		"Failed to get broker service ednpoints %s: %w", fullname, err)
 }

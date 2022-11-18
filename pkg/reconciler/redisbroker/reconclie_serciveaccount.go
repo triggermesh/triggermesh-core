@@ -17,7 +17,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
@@ -48,7 +48,7 @@ func (r *serviceAccountReconciler) reconcile(ctx context.Context, rb *eventingv1
 func buildBrokerServiceAccount(rb *eventingv1alpha1.RedisBroker) *corev1.ServiceAccount {
 	return resources.NewServiceAccount(rb.Namespace, rb.Name+"-"+brokerResourceSuffix,
 		resources.ServiceAccountWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "broker-serviceaccount"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -68,9 +68,9 @@ func (r *serviceAccountReconciler) reconcileServiceAccount(ctx context.Context, 
 		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get broker ServiceAccount", zap.String("serviceAccount", fullname.String()), zap.Error(err))
-		rb.Status.MarkBrokerServiceAccountFailed(reconciler.ReasonFailedServiceAccountGet, "Failed to get broker ServiceAccount")
+		rb.Status.MarkBrokerServiceAccountFailed(common.ReasonFailedServiceAccountGet, "Failed to get broker ServiceAccount")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceAccountGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceAccountGet,
 			"Failed to get broker ServiceAccount %s: %w", fullname, err)
 
 	default:
@@ -79,9 +79,9 @@ func (r *serviceAccountReconciler) reconcileServiceAccount(ctx context.Context, 
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create broker ServiceAccount", zap.String("serviceAccount", fullname.String()), zap.Error(err))
-			rb.Status.MarkBrokerServiceAccountFailed(reconciler.ReasonFailedServiceAccountCreate, "Failed to create broker ServiceAccount")
+			rb.Status.MarkBrokerServiceAccountFailed(common.ReasonFailedServiceAccountCreate, "Failed to create broker ServiceAccount")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceAccountCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceAccountCreate,
 				"Failed to create broker ServiceAccount %s: %w", fullname, err)
 		}
 	}
@@ -95,7 +95,7 @@ func (r *serviceAccountReconciler) reconcileServiceAccount(ctx context.Context, 
 func buildBrokerRoleBinding(rb *eventingv1alpha1.RedisBroker, sa *corev1.ServiceAccount) *rbacv1.RoleBinding {
 	return resources.NewRoleBinding(rb.Namespace, rb.Name+"-"+brokerResourceSuffix, BrokerDeploymentRole, sa.Name,
 		resources.RoleBindingWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "broker-rolebinding"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -115,9 +115,9 @@ func (r *serviceAccountReconciler) reconcileRoleBinding(ctx context.Context, rb 
 		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get broker RoleBinding", zap.String("roleBinding", fullname.String()), zap.Error(err))
-		rb.Status.MarkBrokerRoleBindingFailed(reconciler.ReasonFailedRoleBindingGet, "Failed to get broker RoleBinding")
+		rb.Status.MarkBrokerRoleBindingFailed(common.ReasonFailedRoleBindingGet, "Failed to get broker RoleBinding")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedRoleBindingGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedRoleBindingGet,
 			"Failed to get broker RoleBinding %s: %w", fullname, err)
 
 	default:
@@ -126,9 +126,9 @@ func (r *serviceAccountReconciler) reconcileRoleBinding(ctx context.Context, rb 
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create broker RoleBinding", zap.String("roleBinding", fullname.String()), zap.Error(err))
-			rb.Status.MarkBrokerRoleBindingFailed(reconciler.ReasonFailedRoleBindingCreate, "Failed to create broker RoleBinding")
+			rb.Status.MarkBrokerRoleBindingFailed(common.ReasonFailedRoleBindingCreate, "Failed to create broker RoleBinding")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedRoleBindingCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedRoleBindingCreate,
 				"Failed to create broker RoleBinding %s: %w", fullname, err)
 		}
 	}

@@ -30,6 +30,7 @@ import (
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
 	trginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisbroker"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
@@ -67,7 +68,8 @@ func NewController(
 
 	r := &Reconciler{
 		kubeClientSet:    kubeclient.Get(ctx),
-		secretReconciler: newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
+		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
+		// newSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		redisReconciler: redisReconciler{
 			client:           kubeclient.Get(ctx),
 			deploymentLister: deploymentInformer.Lister(),
@@ -114,7 +116,7 @@ func NewController(
 	endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			ep, ok := obj.(*corev1.Endpoints)
-			if !ok || ep.Labels != nil || ep.Labels[resources.AppNameLabel] == appAnnotationValue {
+			if !ok || ep.Labels != nil || ep.Labels[resources.AppNameLabel] == common.AppAnnotationValue(rb) {
 				return false
 			}
 

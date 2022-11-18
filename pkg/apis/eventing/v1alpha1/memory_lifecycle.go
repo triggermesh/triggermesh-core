@@ -49,6 +49,17 @@ func (t *MemoryBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
 }
 
+// GetReconcilableBrokerStatus returns a status interface that allows generic reconciler
+// to manage it.
+func (t *MemoryBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
+	return &t.Status
+}
+
+// GetOwnedObjectsPrefix returns a prefix string to be used for created/owned objects.
+func (t *MemoryBroker) GetOwnedObjectsPrefix() string {
+	return "rb"
+}
+
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
 func (b *MemoryBroker) GetConditionSet() apis.ConditionSet {
 	memoryBrokerCondSetLock.RLock()

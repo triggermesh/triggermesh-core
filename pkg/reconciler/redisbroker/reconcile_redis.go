@@ -17,7 +17,7 @@ import (
 	pkgreconciler "knative.dev/pkg/reconciler"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
@@ -62,7 +62,7 @@ func (r *redisReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.Re
 func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv1.Deployment {
 	return resources.NewDeployment(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "redis-deployment"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -97,9 +97,9 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 				logging.FromContext(ctx).Error("Unable to update the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentUpdate, "Failed to update Redis deployment")
+				rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentUpdate, "Failed to update Redis deployment")
 
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentUpdate,
+				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentUpdate,
 					"Failed to get Redis deployment %s: %w", fullname, err)
 			}
 		}
@@ -108,9 +108,9 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 		// An error occurred retrieving current deployment.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
+		rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentGet,
 			"Failed to get Redis deployment %s: %w", fullname, err)
 
 	default:
@@ -119,9 +119,9 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentCreate, "Failed to create Redis deployment")
+			rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentCreate, "Failed to create Redis deployment")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentCreate,
 				"Failed to create Redis deployment %s: %w", fullname, err)
 		}
 	}
@@ -135,7 +135,7 @@ func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv
 func buildRedisService(rb *eventingv1alpha1.RedisBroker) *corev1.Service {
 	return resources.NewService(rb.Namespace, rb.Name+"-"+redisResourceSuffix,
 		resources.ServiceWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "redis-service"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
@@ -161,9 +161,9 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 				logging.FromContext(ctx).Error("Unable to update the service", zap.String("service", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceUpdate, "Failed to update Redis service")
+				rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceUpdate, "Failed to update Redis service")
 
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceUpdate,
+				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceUpdate,
 					"Failed to get Redis service %s: %w", fullname, err)
 			}
 		}
@@ -172,9 +172,9 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 		// An error occurred retrieving current object.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceGet, "Failed to get Redis service")
+		rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceGet, "Failed to get Redis service")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceGet,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceGet,
 			"Failed to get Redis service %s: %w", fullname, err)
 
 	default:
@@ -183,9 +183,9 @@ func (r *redisReconciler) reconcileService(ctx context.Context, rb *eventingv1al
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Error("Unable to create the service", zap.String("service", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisServiceFailed(reconciler.ReasonFailedServiceCreate, "Failed to create Redis service")
+			rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceCreate, "Failed to create Redis service")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedServiceCreate,
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceCreate,
 				"Failed to create Redis service %s: %w", fullname, err)
 		}
 	}
@@ -205,21 +205,21 @@ func (r *redisReconciler) reconcileEndpoints(ctx context.Context, service *corev
 			return ep, nil
 		}
 
-		rb.Status.MarkRedisEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for redis service are not available")
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+		rb.Status.MarkRedisEndpointsFailed(common.ReasonUnavailableEndpoints, "Endpoints for redis service are not available")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonUnavailableEndpoints,
 			"Endpoints for redis service are not available %s",
 			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
 
 	case apierrs.IsNotFound(err):
-		rb.Status.MarkRedisEndpointsFailed(reconciler.ReasonUnavailableEndpoints, "Endpoints for redis service do not exist")
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonUnavailableEndpoints,
+		rb.Status.MarkRedisEndpointsFailed(common.ReasonUnavailableEndpoints, "Endpoints for redis service do not exist")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonUnavailableEndpoints,
 			"Endpoints for redis service do not exist %s",
 			types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
 	}
 
 	fullname := types.NamespacedName{Namespace: service.Namespace, Name: service.Name}
-	rb.Status.MarkRedisEndpointsUnknown(reconciler.ReasonFailedEndpointsGet, "Could not retrieve endpoints for redis service")
+	rb.Status.MarkRedisEndpointsUnknown(common.ReasonFailedEndpointsGet, "Could not retrieve endpoints for redis service")
 	logging.FromContext(ctx).Error("Unable to get the redis service endpoints", zap.String("endpoint", fullname.String()), zap.Error(err))
-	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedEndpointsGet,
+	return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedEndpointsGet,
 		"Failed to get redis service ednpoints %s: %w", fullname, err)
 }

@@ -1,7 +1,7 @@
 // Copyright 2022 TriggerMesh Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package redisbroker
+package memorybroker
 
 import (
 	"context"
@@ -20,20 +20,24 @@ import (
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 )
 
+const (
+	appAnnotationValue = "memorybroker"
+)
+
 type Reconciler struct {
-	kubeClientSet kubernetes.Interface
-	//secretReconciler secretReconciler
+	kubeClientSet    kubernetes.Interface
 	secretReconciler common.SecretReconciler
-	redisReconciler  redisReconciler
-	brokerReconciler brokerReconciler
-	saReconciler     serviceAccountReconciler
+	// secretReconciler secretReconciler
+	// memoryReconciler  memoryReconciler
+	// brokerReconciler brokerReconciler
+	// saReconciler     serviceAccountReconciler
 }
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.RedisBroker) reconciler.Event {
+func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.MemoryBroker) reconciler.Event {
 	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", *rb))
 
-	// Make sure the Redis deployment and service exists.
-	_, redisSvc, err := r.redisReconciler.reconcile(ctx, rb)
+	// Make sure the Memory deployment and service exists.
+	_, memorySvc, err := r.memoryReconciler.reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}
@@ -50,8 +54,8 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 		return err
 	}
 
-	// Make sure the Broker deployment for Redis exists and that it points to the Redis service.
-	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, sa, redisSvc, secret)
+	// Make sure the Broker deployment for Memory exists and that it points to the Memory service.
+	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, sa, memorySvc, secret)
 	if err != nil {
 		return err
 	}
