@@ -1,29 +1,29 @@
-# Getting Started
+# Getting Started: Memory Broker
 
-In this introduction tutorial we are going to setup a RedisBroker with a Trigger that sends events to a Target endpoint, and if the delivery faisl to a Dead Letter Sink endpoint.
+In this introduction tutorial we are going to setup a MemoryBroker with a Trigger that sends events to a Target endpoint, and if the delivery faisl to a Dead Letter Sink endpoint.
 
 ## Instructions
 
-TriggerMesh Core includes 2 components:
+This guide uses 2 TriggerMesh components:
 
-* RedisBroker, which uses a backing Redis instance to store events and routes them via Triggers.
+* MemoryBroker, which uses ephemeral memory to store events and routes them via Triggers.
 * Trigger, which subscribes to events and push them to your targets.
 
 Events must conform to [CloudEvents spec](https://github.com/cloudevents/spec) using the [HTTP binding](https://github.com/cloudevents/spec/blob/main/cloudevents/bindings/http-protocol-binding.md).
 
-Create a RedisBroker named `demo`.
+Create a MemoryBroker named `demo`.
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started/broker.yaml
+kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-memory/broker.yaml
 ```
 
-Wait until the RedisBroker is ready. It will inform in its status of the URL where events can be ingested.
+Wait until the MemoryBroker is ready. It will inform in its status of the URL where events can be ingested.
 
 ```console
-kubectl get redisbroker demo
+kubectl get memorybroker demo
 
 NAME   URL                                                        AGE   READY   REASON
-demo   http://demo-rb-broker.default.svc.cluster.local   10s   True
+demo   http://demo-mb-broker.default.svc.cluster.local   10s   True
 ```
 
 To be able to use the broker we will create a Pod that allow us to send events inside the Kubernetes cluster.
@@ -35,7 +35,7 @@ kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/
 It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200` which means that the broker has received it and will try to deliver them to configured triggers.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
+kubectl exec -ti curl -- curl -v http://demo-mb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -59,7 +59,7 @@ kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/
 The Trigger object configures the broker to consume events and send them to a target. The Trigger object can include filters that select which events should be forwarded to the target, and delivery options to configure retries and fallback targets when the event cannot be delivered.
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started/trigger.yaml
+kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-memory/trigger.yaml
 ```
 
 The Trigger created above filters by CloudEvents containing `type: demo.type1` attribute and delivers them to `display-target` service, if delivery fails it will issue 3 retries and then forward the CloudEvent to the `display-deadlettersink` service.
@@ -67,7 +67,7 @@ The Trigger created above filters by CloudEvents containing `type: demo.type1` a
 Using the `curl` Pod again we can send this CloudEvent to the broker.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
+kubectl exec -ti curl -- curl -v http://demo-mb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -107,7 +107,7 @@ kubectl delete -f https://raw.githubusercontent.com/triggermesh/triggermesh-core
 Any event that pass the filter will try to be sent to the target, and upon failing will be delivered to the DLS.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local/ \
+kubectl exec -ti curl -- curl -v http://demo-mb-broker.default.svc.cluster.local/ \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -143,8 +143,8 @@ To clean up the getting started guide, delete each of the created assets:
 ```console
 # Removal of display-target not in this list, since it was deleted previously.
 kubectl delete -f \
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started/trigger.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-memory/trigger.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/display-deadlettersink.yaml,\
-https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started/broker.yaml,\
+https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-memory/broker.yaml,\
 https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/common/curl.yaml
 ```

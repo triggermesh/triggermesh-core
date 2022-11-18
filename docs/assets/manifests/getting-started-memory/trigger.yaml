@@ -1,0 +1,27 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: Trigger
+metadata:
+  name: mdemo
+spec:
+  broker:
+    kind: MemoryBroker
+    group: eventing.triggermesh.io
+    name: demo
+  filters:
+  - any:
+    - exact:
+        type: demo.type1
+  target:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: display-target
+
+  delivery:
+    retry: 3
+    deadLetterSink:
+      ref:
+        kind: Service
+        apiVersion: v1
+        name: display-deadlettersink
+

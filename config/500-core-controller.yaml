@@ -66,6 +66,8 @@ spec:
         - name: METRICS_DOMAIN
           value: triggermesh.io
         # Deployment images
+        - name: MEMORYBROKER_BROKER_IMAGE
+          value: gcr.io/triggermesh/memory-broker:dev
         - name: REDISBROKER_REDIS_IMAGE
           value: redis/redis-stack-server:latest
         - name: REDISBROKER_BROKER_IMAGE

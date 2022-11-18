@@ -1,7 +1,7 @@
 // Copyright 2022 TriggerMesh Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package redisbroker
+package memorybroker
 
 import (
 	"context"
@@ -14,22 +14,20 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	"knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
-	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
+	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/memorybroker"
 	trginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
-	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisbroker"
+	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
@@ -38,9 +36,8 @@ import (
 // github.com/kelseyhightower/envconfig. If this configuration cannot be extracted, then
 // NewController will panic.
 type envConfig struct {
-	RedisImage            string `envconfig:"REDISBROKER_REDIS_IMAGE" required:"true"`
-	BrokerImage           string `envconfig:"REDISBROKER_BROKER_IMAGE" required:"true"`
-	BrokerImagePullPolicy string `envconfig:"REDISBROKER_BROKER_IMAGE_PULL_POLICY" default:"IfNotPresent"`
+	BrokerImage           string `envconfig:"MEMORYBROKER_BROKER_IMAGE" required:"true"`
+	BrokerImagePullPolicy string `envconfig:"MEMORYBROKER_BROKER_IMAGE_PULL_POLICY" default:"IfNotPresent"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -52,7 +49,7 @@ func NewController(
 
 	env := &envConfig{}
 	if err := envconfig.Process("", env); err != nil {
-		logging.FromContext(ctx).Panicf("unable to process RedisBroker's required environment variables: %v", err)
+		logging.FromContext(ctx).Panicf("unable to process MemoryBroker's required environment variables: %v", err)
 	}
 
 	rbInformer := rbinformer.Get(ctx)
@@ -64,26 +61,16 @@ func NewController(
 	serviceAccountInformer := serviceaccount.Get(ctx)
 	roleBindingsInformer := rolebindingsinformer.Get(ctx)
 
-	_ = rolebinding.Get(ctx)
-
 	r := &reconciler{
 		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		saReconciler:     common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
 		brokerReconciler: common.NewBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), endpointsInformer.Lister(),
 			env.BrokerImage, corev1.PullPolicy(env.BrokerImagePullPolicy)),
-
-		redisReconciler: redisReconciler{
-			client:           kubeclient.Get(ctx),
-			deploymentLister: deploymentInformer.Lister(),
-			serviceLister:    serviceInformer.Lister(),
-			endpointsLister:  endpointsInformer.Lister(),
-			image:            env.RedisImage,
-		},
 	}
 
 	impl := rbreconciler.NewImpl(ctx, r)
 
-	rb := &eventingv1alpha1.RedisBroker{}
+	rb := &eventingv1alpha1.MemoryBroker{}
 	gvk := rb.GetGroupVersionKind()
 
 	rbInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
@@ -134,8 +121,8 @@ func NewController(
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 
-	// Filter Triggers that reference a Redis broker.
-	filterTriggerForRedisBroker := func(obj interface{}) bool {
+	// Filter Triggers that reference a Memory broker.
+	filterTriggerForMemoryBroker := func(obj interface{}) bool {
 		t, ok := obj.(*eventingv1alpha1.Trigger)
 		if !ok {
 			return false
@@ -148,12 +135,12 @@ func NewController(
 		}
 
 		// TODO replace with broker namespace when webhook defaulting is implemented
-		_, err := rbInformer.Lister().RedisBrokers(t.Namespace).Get(t.Spec.Broker.Name)
+		_, err := rbInformer.Lister().MemoryBrokers(t.Namespace).Get(t.Spec.Broker.Name)
 		switch {
 		case err == nil:
 			return true
 		case !apierrs.IsNotFound(err):
-			logging.FromContext(ctx).Error("Unable to get Redis Broker", zap.Any("broker", t.Spec.Broker), zap.Error(err))
+			logging.FromContext(ctx).Error("Unable to get Memory Broker", zap.Any("broker", t.Spec.Broker), zap.Error(err))
 		}
 
 		return false
@@ -172,7 +159,7 @@ func NewController(
 	}
 
 	trgInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterTriggerForRedisBroker,
+		FilterFunc: filterTriggerForMemoryBroker,
 		Handler:    controller.HandleAll(enqueueFromTrigger),
 	})
 

@@ -62,7 +62,7 @@ func (t *MemoryBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
 
 // GetOwnedObjectsSuffix returns a string to be appended for created/owned objects.
 func (t *MemoryBroker) GetOwnedObjectsSuffix() string {
-	return "rb"
+	return "mb"
 }
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.

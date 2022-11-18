@@ -8,58 +8,70 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/network"
-	"knative.dev/pkg/reconciler"
+	knreconciler "knative.dev/pkg/reconciler"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
-const (
-	appAnnotationValue = "memorybroker"
-)
-
-type Reconciler struct {
-	kubeClientSet    kubernetes.Interface
+type reconciler struct {
 	secretReconciler common.SecretReconciler
 	saReconciler     common.ServiceAccountReconciler
-	// memoryReconciler  memoryReconciler
-	// brokerReconciler brokerReconciler
+	brokerReconciler common.BrokerReconciler
 }
 
-func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.MemoryBroker) reconciler.Event {
-	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", *rb))
+// options that set Broker environment variables specific for the RedisBroker.
+func memoryDeploymentOption(mb *eventingv1alpha1.MemoryBroker) resources.DeploymentOption {
+	return func(d *appsv1.Deployment) {
+		// Make sure the broker container exists before modifying it.
+		if len(d.Spec.Template.Spec.Containers) == 0 {
+			// Unexpected path.
+			panic("The Broker Deployment to be reconciled has no containers in it.")
+		}
+
+		c := &d.Spec.Template.Spec.Containers[0]
+
+		if mb.Spec.Memory != nil && mb.Spec.Memory.BufferSize != nil {
+			resources.ContainerAddEnvFromValue("REDIS_STREAM", strconv.Itoa(*mb.Spec.Memory.BufferSize))(c)
+		}
+	}
+}
+
+func (r *reconciler) ReconcileKind(ctx context.Context, mb *eventingv1alpha1.MemoryBroker) knreconciler.Event {
+	logging.FromContext(ctx).Infow("Reconciling", zap.Any("MemoryBroker", *mb))
 
 	// Iterate triggers and create secret.
-	secret, err := r.secretReconciler.Reconcile(ctx, rb)
+	secret, err := r.secretReconciler.Reconcile(ctx, mb)
 	if err != nil {
 		return err
 	}
 
 	// Make sure the Broker service account and roles exists.
-	sa, _, err := r.saReconciler.Reconcile(ctx, rb)
+	sa, _, err := r.saReconciler.Reconcile(ctx, mb)
 	if err != nil {
 		return err
 	}
 
-	// Make sure the Broker deployment for Memory exists and that it points to the Memory service.
-	_, brokerSvc, err := r.brokerReconciler.reconcile(ctx, rb, sa, memorySvc, secret)
+	// Make sure the Broker deployment exists.
+	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, mb, sa, secret, memoryDeploymentOption(mb))
 	if err != nil {
 		return err
 	}
 
 	// Set address to the Broker service.
-	rb.Status.SetAddress(getSericeAddress(brokerSvc))
+	mb.Status.SetAddress(getSericeAddress(brokerSvc))
 
 	return nil
 }
 
-func getSericeAddress(svc *v1.Service) *apis.URL {
+func getSericeAddress(svc *corev1.Service) *apis.URL {
 	var port string
 	if svc.Spec.Ports[0].Port != 80 {
 		port = ":" + strconv.Itoa(int(svc.Spec.Ports[0].Port))

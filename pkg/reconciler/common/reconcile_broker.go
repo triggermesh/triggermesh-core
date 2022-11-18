@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -83,117 +82,10 @@ func (r *brokerReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.Re
 	return d, svc, nil
 }
 
-func RedisDeploymentOptions(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Service) resources.DeploymentOption {
-	return func(d *appsv1.Deployment) {
-		// Make sure the broker container exists before modifying it.
-		if len(d.Spec.Template.Spec.Containers) == 0 {
-			// Unexpected path.
-			panic("The Broker Deployment to be reconciled has no containers in it.")
-		}
-
-		c := &d.Spec.Template.Spec.Containers[0]
-
-		var stream string
-		if rb.Spec.Redis != nil && rb.Spec.Redis.Stream != nil && *rb.Spec.Redis.Stream != "" {
-			stream = *rb.Spec.Redis.Stream
-		} else {
-			stream = rb.Namespace + "." + rb.Name
-		}
-		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream)(c)
-
-		if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
-			resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream)(c)
-		}
-
-		if rb.IsUserProvidedRedis() {
-			resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL)(c)
-
-			if rb.Spec.Redis.Connection.Username != nil {
-				resources.ContainerAddEnvVarFromSecret("REDIS_USERNAME",
-					rb.Spec.Redis.Connection.Username.SecretKeyRef.Name,
-					rb.Spec.Redis.Connection.Username.SecretKeyRef.Key)(c)
-			}
-
-			if rb.Spec.Redis.Connection.Password != nil {
-				resources.ContainerAddEnvVarFromSecret("REDIS_PASSWORD",
-					rb.Spec.Redis.Connection.Password.SecretKeyRef.Name,
-					rb.Spec.Redis.Connection.Password.SecretKeyRef.Key)(c)
-			}
-
-			if rb.Spec.Redis.Connection.TLSEnabled != nil && *rb.Spec.Redis.Connection.TLSEnabled {
-				resources.ContainerAddEnvFromValue("REDIS_TLS_ENABLED", "true")(c)
-			}
-
-			if rb.Spec.Redis.Connection.TLSSkipVerify != nil && *rb.Spec.Redis.Connection.TLSSkipVerify {
-				resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", "true")(c)
-			}
-
-		} else {
-			resources.ContainerAddEnvFromValue("REDIS_ADDRESS",
-				fmt.Sprintf("%s:%d", redisSvc.Name, redisSvc.Spec.Ports[0].Port))(c)
-		}
-	}
-}
-
-// // RedisContainerOptions creates Redis environment variable options for the Broker container.
-// func RedisContainerOptions(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Service) []resources.ContainerOption {
-// 	var stream string
-// 	if rb.Spec.Redis != nil && rb.Spec.Redis.Stream != nil && *rb.Spec.Redis.Stream != "" {
-// 		stream = *rb.Spec.Redis.Stream
-// 	} else {
-// 		stream = rb.Namespace + "." + rb.Name
-// 	}
-
-// 	opts := []resources.ContainerOption{
-// 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
-// 	}
-
-// 	if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
-// 		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream))
-// 	}
-
-// 	if rb.IsUserProvidedRedis() {
-// 		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL))
-
-// 		if rb.Spec.Redis.Connection.Username != nil {
-// 			opts = append(opts, resources.ContainerAddEnvVarFromSecret("REDIS_USERNAME",
-// 				rb.Spec.Redis.Connection.Username.SecretKeyRef.Name,
-// 				rb.Spec.Redis.Connection.Username.SecretKeyRef.Key))
-// 		}
-
-// 		if rb.Spec.Redis.Connection.Password != nil {
-// 			opts = append(opts, resources.ContainerAddEnvVarFromSecret("REDIS_PASSWORD",
-// 				rb.Spec.Redis.Connection.Password.SecretKeyRef.Name,
-// 				rb.Spec.Redis.Connection.Password.SecretKeyRef.Key))
-// 		}
-
-// 		if rb.Spec.Redis.Connection.TLSEnabled != nil && *rb.Spec.Redis.Connection.TLSEnabled {
-// 			opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_TLS_ENABLED", "true"))
-// 		}
-
-// 		if rb.Spec.Redis.Connection.TLSSkipVerify != nil && *rb.Spec.Redis.Connection.TLSSkipVerify {
-// 			opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", "true"))
-// 		}
-
-// 	} else {
-// 		opts = append(opts, resources.ContainerAddEnvFromValue("REDIS_ADDRESS",
-// 			fmt.Sprintf("%s:%d", redisSvc.Name, redisSvc.Spec.Ports[0].Port)))
-// 	}
-
-// 	return opts
-// }
-
 func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, image string, pullPolicy corev1.PullPolicy, extraOptions ...resources.DeploymentOption) *appsv1.Deployment {
 	meta := rb.GetObjectMeta()
 	ns, name := meta.GetNamespace(), meta.GetName()
 	bs := rb.GetReconcilableBrokerSpec()
-
-	// var stream string
-	// if rb.Spec.Redis != nil && rb.Spec.Redis.Stream != nil && *rb.Spec.Redis.Stream != "" {
-	// 	stream = *rb.Spec.Redis.Stream
-	// } else {
-	// 	stream = rb.Namespace + "." + rb.Name
-	// }
 
 	copts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
@@ -202,7 +94,6 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", ConfigSecretKey),
-		// resources.ContainerAddEnvFromValue("REDIS_STREAM", stream),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 		resources.ContainerAddPort("httpce", defaultBrokerServicePort),
 		resources.ContainerAddPort("metrics", metricsServicePort),
@@ -250,9 +141,7 @@ func (r *brokerReconciler) reconcileDeployment(
 	sa *corev1.ServiceAccount,
 	secret *corev1.Secret,
 	deploymentOptions []resources.DeploymentOption) (*appsv1.Deployment, error) {
-	//desired := buildBrokerDeployment(rb, sa, redis, secret, r.image, r.pullPolicy)
 	desired := buildBrokerDeployment(rb, sa, secret, r.image, r.pullPolicy, deploymentOptions...)
-	// TODO instead of using container options, use a caller provided callback
 	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
 
 	switch {
