@@ -27,20 +27,13 @@ const (
 type Reconciler struct {
 	kubeClientSet    kubernetes.Interface
 	secretReconciler common.SecretReconciler
-	// secretReconciler secretReconciler
+	saReconciler     common.ServiceAccountReconciler
 	// memoryReconciler  memoryReconciler
 	// brokerReconciler brokerReconciler
-	// saReconciler     serviceAccountReconciler
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.MemoryBroker) reconciler.Event {
 	logging.FromContext(ctx).Infow("Reconciling", zap.Any("Broker", *rb))
-
-	// Make sure the Memory deployment and service exists.
-	_, memorySvc, err := r.memoryReconciler.reconcile(ctx, rb)
-	if err != nil {
-		return err
-	}
 
 	// Iterate triggers and create secret.
 	secret, err := r.secretReconciler.Reconcile(ctx, rb)
@@ -49,7 +42,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Mem
 	}
 
 	// Make sure the Broker service account and roles exists.
-	sa, _, err := r.saReconciler.reconcile(ctx, rb)
+	sa, _, err := r.saReconciler.Reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}

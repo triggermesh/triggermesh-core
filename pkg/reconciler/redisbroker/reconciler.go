@@ -21,12 +21,11 @@ import (
 )
 
 type Reconciler struct {
-	kubeClientSet kubernetes.Interface
-	//secretReconciler secretReconciler
+	kubeClientSet    kubernetes.Interface
 	secretReconciler common.SecretReconciler
 	redisReconciler  redisReconciler
 	brokerReconciler brokerReconciler
-	saReconciler     serviceAccountReconciler
+	saReconciler     common.ServiceAccountReconciler
 }
 
 func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.RedisBroker) reconciler.Event {
@@ -45,7 +44,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	}
 
 	// Make sure the Broker service account and roles exists.
-	sa, _, err := r.saReconciler.reconcile(ctx, rb)
+	sa, _, err := r.saReconciler.Reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}

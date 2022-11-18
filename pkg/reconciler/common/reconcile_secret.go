@@ -20,7 +20,7 @@ import (
 
 	"github.com/triggermesh/brokers/pkg/config/broker"
 
-	"github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	eventingv1alpha1listers "github.com/triggermesh/triggermesh-core/pkg/client/generated/listers/eventing/v1alpha1"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
@@ -35,7 +35,7 @@ var (
 )
 
 type SecretReconciler interface {
-	Reconcile(ctx context.Context, rb v1alpha1.ReconcilableBroker) (*corev1.Secret, error)
+	Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error)
 }
 
 type secretReconciler struct {
@@ -43,6 +43,8 @@ type secretReconciler struct {
 	secretLister  corev1listers.SecretLister
 	triggerLister eventingv1alpha1listers.TriggerLister
 }
+
+var _ SecretReconciler = (*secretReconciler)(nil)
 
 func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister) SecretReconciler {
 	return &secretReconciler{
@@ -52,7 +54,7 @@ func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretL
 	}
 }
 
-func (r *secretReconciler) Reconcile(ctx context.Context, rb v1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
+func (r *secretReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
 	desired, err := r.buildConfigSecret(ctx, rb)
 	if err != nil {
 		return nil, err
@@ -103,7 +105,7 @@ func (r *secretReconciler) Reconcile(ctx context.Context, rb v1alpha1.Reconcilab
 	return current, nil
 }
 
-func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb v1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
+func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
 	meta := rb.GetObjectMeta()
 	ns, name := meta.GetNamespace(), meta.GetName()
 
@@ -181,7 +183,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb v1alpha1.Re
 			"Failed to serialize configuration: %w", err)
 	}
 
-	sn := name + "-" + rb.GetOwnedObjectsPrefix() + "-" + secretResourceSuffix
+	sn := name + "-" + rb.GetOwnedObjectsSuffix() + "-" + secretResourceSuffix
 
 	return resources.NewSecret(ns, sn,
 		resources.SecretWithMetaOptions(

@@ -63,8 +63,8 @@ func (t *RedisBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
 	return &t.Status
 }
 
-// GetOwnedObjectsPrefix returns a prefix string to be used for created/owned objects.
-func (t *RedisBroker) GetOwnedObjectsPrefix() string {
+// GetOwnedObjectsSuffix returns a string to be appended for created/owned objects.
+func (t *RedisBroker) GetOwnedObjectsSuffix() string {
 	return "rb"
 }
 

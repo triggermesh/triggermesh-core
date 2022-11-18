@@ -55,8 +55,8 @@ func (t *MemoryBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
 	return &t.Status
 }
 
-// GetOwnedObjectsPrefix returns a prefix string to be used for created/owned objects.
-func (t *MemoryBroker) GetOwnedObjectsPrefix() string {
+// GetOwnedObjectsSuffix returns a string to be appended for created/owned objects.
+func (t *MemoryBroker) GetOwnedObjectsSuffix() string {
 	return "rb"
 }
 
