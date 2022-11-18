@@ -27,10 +27,7 @@ import (
 )
 
 const (
-	ConfigSecretKey = "config"
-)
-
-var (
+	ConfigSecretKey      = "config"
 	secretResourceSuffix = "config"
 )
 

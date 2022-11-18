@@ -76,16 +76,6 @@ type SecretValueFromSource struct {
 	SecretKeyRef corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
 }
 
-type Broker struct {
-	Port *int `json:"port,omitempty"`
-
-	Observability *Observability `json:"observability,omitempty"`
-}
-
-type Observability struct {
-	ValueFromConfigMap string `json:"valueFromConfigMap"`
-}
-
 type RedisBrokerSpec struct {
 	Redis *Redis `json:"redis,omitempty"`
 

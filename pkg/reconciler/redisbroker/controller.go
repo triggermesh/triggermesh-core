@@ -70,6 +70,8 @@ func NewController(
 		kubeClientSet:    kubeclient.Get(ctx),
 		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		saReconciler:     common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
+		brokerReconciler: common.NewBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), endpointsInformer.Lister(),
+			env.BrokerImage, corev1.PullPolicy(env.BrokerImagePullPolicy)),
 
 		redisReconciler: redisReconciler{
 			client:           kubeclient.Get(ctx),
@@ -79,14 +81,14 @@ func NewController(
 			image:            env.RedisImage,
 		},
 
-		brokerReconciler: brokerReconciler{
-			client:           kubeclient.Get(ctx),
-			deploymentLister: deploymentInformer.Lister(),
-			serviceLister:    serviceInformer.Lister(),
-			endpointsLister:  endpointsInformer.Lister(),
-			image:            env.BrokerImage,
-			pullPolicy:       corev1.PullPolicy(env.BrokerImagePullPolicy),
-		},
+		// brokerReconciler: brokerReconciler{
+		// 	client:           kubeclient.Get(ctx),
+		// 	deploymentLister: deploymentInformer.Lister(),
+		// 	serviceLister:    serviceInformer.Lister(),
+		// 	endpointsLister:  endpointsInformer.Lister(),
+		// 	image:            env.BrokerImage,
+		// 	pullPolicy:       corev1.PullPolicy(env.BrokerImagePullPolicy),
+		// },
 	}
 
 	impl := rbreconciler.NewImpl(ctx, r)

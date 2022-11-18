@@ -49,6 +49,11 @@ func (t *MemoryBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
 }
 
+// GetReconcilableBrokerSpec returns the all brokers common Broker spec.
+func (t *MemoryBroker) GetReconcilableBrokerSpec() *Broker {
+	return &t.Spec.Broker
+}
+
 // GetReconcilableBrokerStatus returns a status interface that allows generic reconciler
 // to manage it.
 func (t *MemoryBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {

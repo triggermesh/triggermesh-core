@@ -57,6 +57,11 @@ func (t *RedisBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
 }
 
+// GetReconcilableBrokerSpec returns the all brokers common Broker spec.
+func (t *RedisBroker) GetReconcilableBrokerSpec() *Broker {
+	return &t.Spec.Broker
+}
+
 // GetReconcilableBrokerStatus returns a status interface that allows generic reconciler
 // to manage it.
 func (t *RedisBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
@@ -217,7 +222,6 @@ func (bs *RedisBrokerStatus) MarkRedisEndpointsTrue() {
 
 // Manage Redis broker state for
 // Deployment, Service and Endpoint
-
 func (bs *RedisBrokerStatus) MarkBrokerDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerDeployment, reason, messageFormat, messageA...)
 }
