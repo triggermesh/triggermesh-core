@@ -1,7 +1,7 @@
 apiVersion: eventing.triggermesh.io/v1alpha1
 kind: Trigger
 metadata:
-  name: demo
+  name: rdemo
 spec:
   broker:
     kind: RedisBroker

@@ -57,6 +57,7 @@ rules:
 - apiGroups:
   - eventing.triggermesh.io
   resources:
+  - memorybrokers
   - redisbrokers
   - triggers
   verbs:
@@ -67,6 +68,7 @@ rules:
 - apiGroups:
   - eventing.triggermesh.io
   resources:
+  - memorybrokers/status
   - redisbrokers/status
   - triggers/status
   verbs:
@@ -78,6 +80,7 @@ rules:
 - apiGroups:
   - eventing.triggermesh.io
   resources:
+  - memorybrokers/finalizers
   - redisbrokers/finalizers
   - triggers/finalizers
   verbs:
@@ -87,6 +90,7 @@ rules:
 - apiGroups:
   - eventing.triggermesh.io
   resources:
+  - memorybrokers
   - redisbrokers
   - triggers
   verbs:

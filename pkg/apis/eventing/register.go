@@ -12,4 +12,10 @@ var (
 		Group:    GroupName,
 		Resource: "redisbrokers",
 	}
+
+	// BrokersResource represents a TriggerMesh Memory Broker
+	MemoryBrokersResource = schema.GroupResource{
+		Group:    GroupName,
+		Resource: "memorybrokers",
+	}
 )

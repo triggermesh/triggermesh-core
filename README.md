@@ -16,7 +16,8 @@ ko apply -f ./config
 
 ## Usage
 
-- [Getting Started](docs/getting-started.md).
+- [Getting Started (Redis Broker)](docs/getting-started-redis.md).
+- [Getting Started (Memory Broker)](docs/getting-started-memory.md).
 - [Broker Observability](docs/observable-broker.md).
 
 ## Contributing

@@ -1,4 +1,4 @@
-package redisbroker
+package common
 
 import (
 	"context"
@@ -22,15 +22,18 @@ import (
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	eventingv1alpha1listers "github.com/triggermesh/triggermesh-core/pkg/client/generated/listers/eventing/v1alpha1"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
 
 const (
-	secretResourceSuffix = "rb-config"
-	configSecretKey      = "config"
+	ConfigSecretKey      = "config"
+	secretResourceSuffix = "config"
 )
+
+type SecretReconciler interface {
+	Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error)
+}
 
 type secretReconciler struct {
 	client        kubernetes.Interface
@@ -38,15 +41,17 @@ type secretReconciler struct {
 	triggerLister eventingv1alpha1listers.TriggerLister
 }
 
-func newSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister) secretReconciler {
-	return secretReconciler{
+var _ SecretReconciler = (*secretReconciler)(nil)
+
+func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister) SecretReconciler {
+	return &secretReconciler{
 		client:        k8sclient.Get(ctx),
 		secretLister:  secretLister,
 		triggerLister: triggerLister,
 	}
 }
 
-func (r *secretReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*corev1.Secret, error) {
+func (r *secretReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
 	desired, err := r.buildConfigSecret(ctx, rb)
 	if err != nil {
 		return nil, err
@@ -62,48 +67,51 @@ func (r *secretReconciler) reconcile(ctx context.Context, rb *eventingv1alpha1.R
 			current, err = r.client.CoreV1().Secrets(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-				logging.FromContext(ctx).Error("Unable to update the secret", zap.String("secret", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentUpdate, "Failed to update Redis deployment")
+				logging.FromContext(ctx).Error("Unable to update secret", zap.String("secret", fullname.String()), zap.Error(err))
+				rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedSecretUpdate, "Failed to update config from secret")
 
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentUpdate,
-					"Failed to get Redis deployment %s: %w", fullname, err)
+				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedSecretUpdate,
+					"Failed to update config from secret %s: %w", fullname, err)
 			}
 		}
 
 	case !apierrs.IsNotFound(err):
-		// An error occurred retrieving current deployment.
+		// An error occurred retrieving current secret.
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
+		logging.FromContext(ctx).Error("Unable to get secret", zap.String("secret", fullname.String()), zap.Error(err))
+		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedSecretGet, "Failed to get config from secret")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentGet,
-			"Failed to get Redis deployment %s: %w", fullname, err)
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedSecretGet,
+			"Failed to get config from secret %s: %w", fullname, err)
 
 	default:
-		// The deployment has not been found, create it.
+		// The secret has not been found, create it.
 		current, err = r.client.CoreV1().Secrets(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-			logging.FromContext(ctx).Error("Unable to create the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisDeploymentFailed(reconciler.ReasonFailedDeploymentCreate, "Failed to create Redis deployment")
+			logging.FromContext(ctx).Error("Unable to create secret", zap.String("secret", fullname.String()), zap.Error(err))
+			rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedSecretCreate, "Failed to create secret for config")
 
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedDeploymentCreate,
-				"Failed to create Redis deployment %s: %w", fullname, err)
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedSecretCreate,
+				"Failed to create secret for config %s: %w", fullname, err)
 		}
 	}
 
-	rb.Status.MarkConfigSecretReady()
+	rb.GetReconcilableBrokerStatus().MarkConfigSecretReady()
 
 	return current, nil
 }
 
-func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*corev1.Secret, error) {
-	triggers, err := r.triggerLister.Triggers(rb.Namespace).List(labels.Everything())
+func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
+	meta := rb.GetObjectMeta()
+	ns, name := meta.GetNamespace(), meta.GetName()
+
+	triggers, err := r.triggerLister.Triggers(ns).List(labels.Everything())
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to list triggers at namespace", zap.Error(err))
-		rb.Status.MarkConfigSecretFailed(reconciler.ReasonFailedTriggerList, "Failed to list triggers")
+		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedTriggerList, "Failed to list triggers")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedTriggerList,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedTriggerList,
 			"Failed to list triggers: %w", err)
 	}
 
@@ -166,19 +174,21 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb *eventingv1
 	b, err := yaml.Marshal(cfg)
 	if err != nil {
 		logging.FromContext(ctx).Error("Unable to marshal configuration into YAML", zap.Error(err))
-		rb.Status.MarkConfigSecretFailed(reconciler.ReasonFailedConfigSerialize, "Failed to serialize configuration")
+		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedConfigSerialize, "Failed to serialize configuration")
 
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, reconciler.ReasonFailedConfigSerialize,
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedConfigSerialize,
 			"Failed to serialize configuration: %w", err)
 	}
 
-	return resources.NewSecret(rb.Namespace, rb.Name+"-"+secretResourceSuffix,
+	sn := name + "-" + rb.GetOwnedObjectsSuffix() + "-" + secretResourceSuffix
+
+	return resources.NewSecret(ns, sn,
 		resources.SecretWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, appAnnotationValue),
+			resources.MetaAddLabel(resources.AppNameLabel, AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "broker-config"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
-			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+secretResourceSuffix),
-			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-		resources.SecretSetData(configSecretKey, b)), nil
+			resources.MetaAddLabel(resources.AppInstanceLabel, sn),
+			resources.MetaAddOwner(meta, rb.GetGroupVersionKind())),
+		resources.SecretSetData(ConfigSecretKey, b)), nil
 }

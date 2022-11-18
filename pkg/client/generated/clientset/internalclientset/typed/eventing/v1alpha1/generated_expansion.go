@@ -4,6 +4,8 @@
 
 package v1alpha1
 
+type MemoryBrokerExpansion interface{}
+
 type RedisBrokerExpansion interface{}
 
 type TriggerExpansion interface{}

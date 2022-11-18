@@ -4,7 +4,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -14,76 +13,47 @@ import (
 // +genreconciler
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RedisBroker is a Redis based broker implementation that collects a pool of
+// MemoryBroker is a Memory based broker implementation that collects a pool of
 // events that are consumable using Triggers. Brokers provide a well-known endpoint
 // for event delivery that senders can use with minimal knowledge of the event
 // routing strategy. Subscribers use Triggers to request delivery of events from a
 // broker's pool to a specific URL or Addressable endpoint.
-type RedisBroker struct {
+type MemoryBroker struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec defines the desired state of the broker.
-	Spec RedisBrokerSpec `json:"spec,omitempty"`
+	Spec MemoryBrokerSpec `json:"spec,omitempty"`
 
 	// Status represents the current state of the broker. This data may be out of
 	// date.
 	// +optional
-	Status RedisBrokerStatus `json:"status,omitempty"`
+	Status MemoryBrokerStatus `json:"status,omitempty"`
 }
 
 var (
 	// Make sure this is a kubernetes object.
-	_ runtime.Object = (*RedisBroker)(nil)
+	_ runtime.Object = (*MemoryBroker)(nil)
 	// Check that we can reconcile this object as a Broker.
-	_ ReconcilableBroker = (*RedisBroker)(nil)
+	_ ReconcilableBroker = (*MemoryBroker)(nil)
 	// Check that the type conforms to the duck Knative Resource shape.
-	_ duckv1.KRShaped = (*RedisBroker)(nil)
+	_ duckv1.KRShaped = (*MemoryBroker)(nil)
 )
 
-type RedisConnection struct {
-	// Redis URL.
-	URL string `json:"url"`
-
-	// Redis username.
-	Username *SecretValueFromSource `json:"username,omitempty"`
-
-	// Redis password.
-	Password *SecretValueFromSource `json:"password,omitempty"`
-
-	// Use TLS enctrypted connection.
-	TLSEnabled *bool `json:"tlsEnabled,omitempty"`
-
-	// Skip TLS certificate verification.
-	TLSSkipVerify *bool `json:"tlsSkipVerify,omitempty"`
-}
-
-type Redis struct {
-	// Redis connection data.
-	Connection *RedisConnection `json:"connection,omitempty"`
-
-	// Stream name used by the broker.
-	Stream *string `json:"stream,omitempty"`
-
+type Memory struct {
 	// Maximum number of items the stream can host.
-	StreamMaxLen *int `json:"streamMaxLen,omitempty"`
+	BufferSize *int `json:"streamMaxLen,omitempty"`
 }
 
-// SecretValueFromSource represents the source of a secret value
-type SecretValueFromSource struct {
-	// The Secret key to select from.
-	SecretKeyRef corev1.SecretKeySelector `json:"secretKeyRef,omitempty"`
-}
-
-type RedisBrokerSpec struct {
-	Redis *Redis `json:"redis,omitempty"`
+type MemoryBrokerSpec struct {
+	Memory *Memory `json:"memory,omitempty"`
 
 	Broker Broker `json:"broker,omitempty"`
 }
 
-// RedisBrokerStatus represents the current state of a Redis broker.
-type RedisBrokerStatus struct {
+// MemoryBrokerStatus represents the current state of a Memory broker.
+type MemoryBrokerStatus struct {
 	// inherits duck/v1 Status, which currently provides:
 	// * ObservedGeneration - the 'Generation' of the Broker that was last processed by the controller.
 	// * Conditions - the latest available observations of a resource's current state.
@@ -97,11 +67,11 @@ type RedisBrokerStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RedisBrokerList is a collection of Brokers.
-type RedisBrokerList struct {
+// MemoryBrokerList is a collection of Brokers.
+type MemoryBrokerList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
 
-	Items []RedisBroker `json:"items"`
+	Items []MemoryBroker `json:"items"`
 }

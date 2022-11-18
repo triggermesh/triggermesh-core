@@ -97,6 +97,137 @@ func (w *wrapEventingV1alpha1) RESTClient() rest.Interface {
 	panic("RESTClient called on dynamic client!")
 }
 
+func (w *wrapEventingV1alpha1) MemoryBrokers(namespace string) typedeventingv1alpha1.MemoryBrokerInterface {
+	return &wrapEventingV1alpha1MemoryBrokerImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "eventing.triggermesh.io",
+			Version:  "v1alpha1",
+			Resource: "memorybrokers",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapEventingV1alpha1MemoryBrokerImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedeventingv1alpha1.MemoryBrokerInterface = (*wrapEventingV1alpha1MemoryBrokerImpl)(nil)
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Create(ctx context.Context, in *v1alpha1.MemoryBroker, opts v1.CreateOptions) (*v1alpha1.MemoryBroker, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "MemoryBroker",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBroker{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.MemoryBroker, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBroker{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.MemoryBrokerList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBrokerList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.MemoryBroker, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBroker{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Update(ctx context.Context, in *v1alpha1.MemoryBroker, opts v1.UpdateOptions) (*v1alpha1.MemoryBroker, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "MemoryBroker",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBroker{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) UpdateStatus(ctx context.Context, in *v1alpha1.MemoryBroker, opts v1.UpdateOptions) (*v1alpha1.MemoryBroker, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "MemoryBroker",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.MemoryBroker{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1MemoryBrokerImpl) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
 func (w *wrapEventingV1alpha1) RedisBrokers(namespace string) typedeventingv1alpha1.RedisBrokerInterface {
 	return &wrapEventingV1alpha1RedisBrokerImpl{
 		dyn: w.dyn.Resource(schema.GroupVersionResource{

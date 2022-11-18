@@ -13,6 +13,7 @@ rules:
 - apiGroups:
   - eventing.triggermesh.io
   resources:
+  - memorybrokers
   - redisbrokers
   verbs:
   - get

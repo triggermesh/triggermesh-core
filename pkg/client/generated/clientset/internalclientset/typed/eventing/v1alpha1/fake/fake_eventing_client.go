@@ -14,6 +14,10 @@ type FakeEventingV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeEventingV1alpha1) MemoryBrokers(namespace string) v1alpha1.MemoryBrokerInterface {
+	return &FakeMemoryBrokers{c, namespace}
+}
+
 func (c *FakeEventingV1alpha1) RedisBrokers(namespace string) v1alpha1.RedisBrokerInterface {
 	return &FakeRedisBrokers{c, namespace}
 }

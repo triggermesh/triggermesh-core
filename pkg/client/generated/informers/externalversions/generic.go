@@ -39,6 +39,8 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=eventing.triggermesh.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("memorybrokers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().MemoryBrokers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("redisbrokers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().RedisBrokers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("triggers"):

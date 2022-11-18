@@ -57,6 +57,22 @@ func (t *RedisBroker) GetStatus() *duckv1.Status {
 	return &t.Status.Status
 }
 
+// GetReconcilableBrokerSpec returns the all brokers common Broker spec.
+func (t *RedisBroker) GetReconcilableBrokerSpec() *Broker {
+	return &t.Spec.Broker
+}
+
+// GetReconcilableBrokerStatus returns a status interface that allows generic reconciler
+// to manage it.
+func (t *RedisBroker) GetReconcilableBrokerStatus() ReconcilableBrokerStatus {
+	return &t.Status
+}
+
+// GetOwnedObjectsSuffix returns a string to be appended for created/owned objects.
+func (t *RedisBroker) GetOwnedObjectsSuffix() string {
+	return "rb"
+}
+
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
 func (b *RedisBroker) GetConditionSet() apis.ConditionSet {
 	redisBrokerCondSetLock.RLock()
@@ -126,8 +142,7 @@ func (bs *RedisBrokerStatus) MarkConfigSecretReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerConfigSecret)
 }
 
-// Manage Redis server state for both
-// Service and Deployment
+// Manage Broker's service account and rolebinding.
 
 func (bs *RedisBrokerStatus) MarkBrokerServiceAccountFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerServiceAccount, reason, messageFormat, messageA...)
@@ -152,6 +167,9 @@ func (bs *RedisBrokerStatus) MarkBrokerRoleBindingUnknown(reason, messageFormat 
 func (bs *RedisBrokerStatus) MarkBrokerRoleBindingReady() {
 	redisBrokerCondSet.Manage(bs).MarkTrue(RedisBrokerBrokerRoleBinding)
 }
+
+// Manage Redis server state for both
+// Service and Deployment
 
 func (bs *RedisBrokerStatus) MarkRedisDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerRedisDeployment, reason, messageFormat, messageA...)
@@ -204,7 +222,6 @@ func (bs *RedisBrokerStatus) MarkRedisEndpointsTrue() {
 
 // Manage Redis broker state for
 // Deployment, Service and Endpoint
-
 func (bs *RedisBrokerStatus) MarkBrokerDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
 	redisBrokerCondSet.Manage(bs).MarkFalse(RedisBrokerBrokerDeployment, reason, messageFormat, messageA...)
 }
