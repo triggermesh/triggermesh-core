@@ -112,12 +112,12 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	}
 
 	// Set address to the Broker service.
-	rb.Status.SetAddress(getSericeAddress(brokerSvc))
+	rb.Status.SetAddress(getServiceAddress(brokerSvc))
 
 	return nil
 }
 
-func getSericeAddress(svc *v1.Service) *apis.URL {
+func getServiceAddress(svc *v1.Service) *apis.URL {
 	var port string
 	if svc.Spec.Ports[0].Port != 80 {
 		port = ":" + strconv.Itoa(int(svc.Spec.Ports[0].Port))

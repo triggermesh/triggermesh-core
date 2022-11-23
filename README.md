@@ -14,6 +14,18 @@ Devevlopment version might be unstable.
 ko apply -f ./config
 ```
 
+## Concepts
+
+TriggerMesh core contains Kubernetes objects for Brokers and Triggers:
+
+- [RedisBroker](docs/redis-broker.md)
+- [MemoryBroker](docs/memory-broker.md)
+- [Trigger](docs/trigger.md)
+
+The brokers are used to ingest events and route them to targets. To ingest events, they must conform to the [CloudEvents specification][ce-spec] using the HTTP binding, and must use the HTTP address exposed by the Broker.
+
+Events consumption is done asynchronously by configuring Triggers that reference a Broker object. A Trigger must also include information about the consumer address, either a Kubernetes object or an HTTP address, and optionally can include an event filter.
+
 ## Usage
 
 - [Getting Started (Redis Broker)](docs/getting-started-redis.md).
@@ -37,3 +49,4 @@ Additionally, the End User License Agreement included in the [`EULA.pdf`](EULA.p
 executables and container images released by TriggerMesh Inc.
 
 [asl2]: https://www.apache.org/licenses/LICENSE-2.0
+[ce-spec]: https://github.com/cloudevents/spec
