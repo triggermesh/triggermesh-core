@@ -1,5 +1,9 @@
 # Redis Broker
 
+The `RedisBroker` persist every ingested message at a Stream before returning an ACK to the event sender, making it more reliable than the [MemoryBroker](memory-broker.md).
+
+It can be configured with any Redis instance version 6 and up, by providing connection parameters. If a Redis connection is not informed a Redis Deployment will be created by the TriggerMesh Core controller.
+
 ## Spec
 
 ```yaml
