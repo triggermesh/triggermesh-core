@@ -1,5 +1,7 @@
 # Memory Broker
 
+The `MemoryBroker` is a very simple and effective Broker that do not persist events. For stronger delivery guarantees see [RedisBroker](redis-broker.md).
+
 ## Spec
 
 ```yaml
