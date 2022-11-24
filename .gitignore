@@ -19,7 +19,7 @@
 *.rej
 
 # Build artifacts
-/_output/
+/releases/
 
 # Test artifacts
 *.test

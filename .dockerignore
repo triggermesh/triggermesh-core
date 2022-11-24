@@ -1,0 +1,16 @@
+# Top level files and directories
+/.git/
+/.github/
+/test/
+/hack/
+!/hack/inc.Codegen.mk
+/.dockerignore
+
+# Patterns
+**/config/
+**/*.md
+**/*_test.go
+**/.gitignore
+**/Dockerfile
+
+# Binaries
