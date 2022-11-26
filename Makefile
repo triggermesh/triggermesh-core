@@ -87,15 +87,15 @@ $(filter-out $(CUSTOM_BUILD_BINARIES), $(COMMANDS)): ## Build artifact
 	$(GO) build -ldflags "$(LDFLAGS_STATIC)" -o $(BIN_OUTPUT_DIR)/$@ ./cmd/$@
 
 deploy: ## Deploy TriggerMesh stack to default Kubernetes cluster
-	$(KO) resolve -f $(BASE_DIR)/config > $(BASE_DIR)/triggermesh-$(IMAGE_TAG).yaml
+	$(KO) resolve -f $(BASE_DIR)/config > $(BASE_DIR)/triggermesh-core-$(IMAGE_TAG).yaml
 	@for component in $(CUSTOM_BUILD_IMAGES); do \
 		$(MAKE) -C ./cmd/$$component build CONTEXT=$(BASE_DIR) IMAGE_TAG=$(KO_DOCKER_REPO)/$$component-$(IMAGE_TAG) && \
 		$(MAKE) -C ./cmd/$$component push IMAGE_TAG=$(KO_DOCKER_REPO)/$$component-$(IMAGE_TAG) && \
-		$(SED) 's|value: .*'$$component'.*|value: $(KO_DOCKER_REPO)/'$$component'-$(IMAGE_TAG)|g' $(BASE_DIR)/triggermesh-$(IMAGE_TAG).yaml || exit 1; \
+		$(SED) 's|value: .*'$$component'.*|value: $(KO_DOCKER_REPO)/'$$component'-$(IMAGE_TAG)|g' $(BASE_DIR)/triggermesh-core-$(IMAGE_TAG).yaml || exit 1; \
 	done
 
-	$(KO) apply -f $(BASE_DIR)/triggermesh-$(IMAGE_TAG).yaml
-	@rm $(BASE_DIR)/triggermesh-$(IMAGE_TAG).yaml
+	$(KO) apply -f $(BASE_DIR)/triggermesh-core-$(IMAGE_TAG).yaml
+	@rm $(BASE_DIR)/triggermesh-core-$(IMAGE_TAG).yaml
 
 undeploy: ## Remove TriggerMesh stack from default Kubernetes cluster
 	$(KO) delete -f $(BASE_DIR)/config
@@ -105,16 +105,16 @@ vm-images:
 
 release: ## Publish container images and generate release manifests
 	@mkdir -p $(DIST_DIR)
-	$(KO) resolve -f config/ -l 'triggermesh.io/crd-install' > $(DIST_DIR)/triggermesh-crds.yaml
-	@cp config/namespace/100-namespace.yaml $(DIST_DIR)/triggermesh.yaml
+	$(KO) resolve -f config/ -l 'triggermesh.io/crd-install' > $(DIST_DIR)/triggermesh-core-crds.yaml
+	@cp config/namespace/100-namespace.yaml $(DIST_DIR)/triggermesh-core.yaml
 	$(KO) resolve $(KOFLAGS) -B -t latest -f config/ -l '!triggermesh.io/crd-install' > /dev/null
-	$(KO) resolve $(KOFLAGS) -B -t $(IMAGE_TAG) --tag-only -f config/ -l '!triggermesh.io/crd-install' >> $(DIST_DIR)/triggermesh.yaml
+	$(KO) resolve $(KOFLAGS) -B -t $(IMAGE_TAG) --tag-only -f config/ -l '!triggermesh.io/crd-install' >> $(DIST_DIR)/triggermesh-core.yaml
 
 	@for component in $(CUSTOM_BUILD_IMAGES); do \
 		$(MAKE) -C ./cmd/$$component build CONTEXT=$(BASE_DIR) IMAGE_TAG=$(KO_DOCKER_REPO)/$$component:$(IMAGE_TAG) && \
 		$(MAKE) -C ./cmd/$$component tag IMAGE_TAG=$(KO_DOCKER_REPO)/$$component:$(IMAGE_TAG) TAGS=$(KO_DOCKER_REPO)/$$component:latest && \
 		$(MAKE) -C ./cmd/$$component push IMAGE_TAG=$(KO_DOCKER_REPO)/$$component && \
-		$(SED) 's/'$$component':.*/'$$component':$(IMAGE_TAG)/g' $(DIST_DIR)/triggermesh.yaml || exit 1; \
+		$(SED) 's/'$$component':.*/'$$component':$(IMAGE_TAG)/g' $(DIST_DIR)/triggermesh-core.yaml || exit 1; \
 	done
 
 gen-apidocs: ## Generate API docs
@@ -162,7 +162,7 @@ clean: ## Clean build artifacts
 	@for bin in $(COMMANDS) ; do \
 		$(RM) -v $(BIN_OUTPUT_DIR)/$$bin; \
 	done
-	@$(RM) -v $(DIST_DIR)/triggermesh-crds.yaml $(DIST_DIR)/triggermesh.yaml
+	@$(RM) -v $(DIST_DIR)/triggermesh-core-crds.yaml $(DIST_DIR)/triggermesh-core.yaml
 	@$(RM) -v $(TEST_OUTPUT_DIR)/$(KREPO)-c.out $(TEST_OUTPUT_DIR)/$(KREPO)-unit-tests.xml
 	@$(RM) -v $(COVER_OUTPUT_DIR)/$(KREPO)-coverage.html
 
