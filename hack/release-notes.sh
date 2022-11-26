@@ -46,13 +46,13 @@ Install the TriggerMesh core resources:
 
 
 \`\`\`console
-kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/${RELEASE}/triggermesh-crds.yaml
+kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/${RELEASE}/triggermesh-core-crds.yaml
 \`\`\`
 
 Install the TriggerMesh open source platform components:
 
 \`\`\`console
-kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/${RELEASE}/triggermesh.yaml
+kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/${RELEASE}/triggermesh-core.yaml
 \`\`\`
 
 ${RELEASE_ASSETS_TABLE}
