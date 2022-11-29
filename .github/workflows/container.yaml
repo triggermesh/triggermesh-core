@@ -32,6 +32,7 @@ jobs:
           registry: gcr.io
           username: _json_key
           password: ${{ secrets.GCLOUD_SERVICEACCOUNT_KEY }}
+        if: github.event_name != 'pull_request'
 
       - name: Docker metadata
         id: meta
