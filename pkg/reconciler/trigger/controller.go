@@ -12,10 +12,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/resolver"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	mbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/memorybroker"
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
 	tginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 	tgreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/trigger"
@@ -29,9 +31,11 @@ func NewController(
 ) *controller.Impl {
 	tgInformer := tginformer.Get(ctx)
 	rbInformer := rbinformer.Get(ctx)
+	mbInformer := mbinformer.Get(ctx)
 
 	r := &Reconciler{
 		rbLister: rbInformer.Lister(),
+		mbLister: mbInformer.Lister(),
 	}
 
 	impl := tgreconciler.NewImpl(ctx, r)
@@ -40,22 +44,29 @@ func NewController(
 
 	tgInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	// Filter Redis brokers that are referenced by triggers.
+	// Filter brokers that are referenced by triggers.
 	filterBroker := func(obj interface{}) bool {
-		// TODO other brokers should be supported.
+		// TODO duck
+		var accessor kmeta.OwnerRefableAccessor
 		rb, ok := obj.(*eventingv1alpha1.RedisBroker)
 		if !ok {
-			return false
+			mb, ok := obj.(*eventingv1alpha1.MemoryBroker)
+			if !ok {
+				return false
+			}
+			accessor = kmeta.OwnerRefableAccessor(mb)
+		} else {
+			accessor = kmeta.OwnerRefableAccessor(rb)
 		}
 
-		tgl, err := tgInformer.Lister().Triggers(rb.Namespace).List(labels.Everything())
+		tgl, err := tgInformer.Lister().Triggers(accessor.GetNamespace()).List(labels.Everything())
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
 			return false
 		}
 
 		for _, tg := range tgl {
-			if tg.ReferencesBroker(rb) {
+			if tg.ReferencesBroker(accessor) {
 				return true
 			}
 		}
@@ -64,20 +75,27 @@ func NewController(
 	}
 
 	enqueueFromBroker := func(obj interface{}) {
-		// TODO check GVK if other brokers are  supported.
+		// TODO duck
+		var accessor kmeta.OwnerRefableAccessor
 		rb, ok := obj.(*eventingv1alpha1.RedisBroker)
 		if !ok {
-			return
+			mb, ok := obj.(*eventingv1alpha1.MemoryBroker)
+			if !ok {
+				return
+			}
+			accessor = kmeta.OwnerRefableAccessor(mb)
+		} else {
+			accessor = kmeta.OwnerRefableAccessor(rb)
 		}
 
-		tgl, err := tgInformer.Lister().Triggers(rb.Namespace).List(labels.Everything())
+		tgl, err := tgInformer.Lister().Triggers(accessor.GetNamespace()).List(labels.Everything())
 		if err != nil {
 			logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
 			return
 		}
 
 		for _, tg := range tgl {
-			if tg.ReferencesBroker(rb) {
+			if tg.ReferencesBroker(accessor) {
 				impl.EnqueueKey(types.NamespacedName{
 					Name:      tg.Name,
 					Namespace: tg.Namespace,
@@ -87,6 +105,11 @@ func NewController(
 	}
 
 	rbInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: filterBroker,
+		Handler:    controller.HandleAll(enqueueFromBroker),
+	})
+
+	mbInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterBroker,
 		Handler:    controller.HandleAll(enqueueFromBroker),
 	})

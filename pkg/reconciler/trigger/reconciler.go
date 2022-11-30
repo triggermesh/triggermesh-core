@@ -21,7 +21,9 @@ import (
 )
 
 type Reconciler struct {
+	// TODO duck brokers
 	rbLister    eventingv1alpha1listers.RedisBrokerLister
+	mbLister    eventingv1alpha1listers.MemoryBrokerLister
 	uriResolver *resolver.URIResolver
 }
 
@@ -40,7 +42,26 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Trig
 }
 
 func (r *Reconciler) resolveBroker(ctx context.Context, t *eventingv1alpha1.Trigger) pkgreconciler.Event {
-	// TODO, use any broker, not RedisBrokers
+	// TODO duck
+	// TODO move to webhook
+	if t.Spec.Broker.Group != "" && t.Spec.Broker.Group != eventingv1alpha1.SchemeGroupVersion.Group {
+		return controller.NewPermanentError(fmt.Errorf("not supported Broker Group %q", t.Spec.Broker.Group))
+	}
+
+	var rb *eventingv1alpha1.RedisBroker
+	if t.Spec.Broker.Kind == rb.GetGroupVersionKind().Kind {
+		return r.resolveRedisBroker(ctx, t)
+	}
+
+	var mb *eventingv1alpha1.MemoryBroker
+	if t.Spec.Broker.Kind != mb.GetGroupVersionKind().Kind {
+		return controller.NewPermanentError(fmt.Errorf("not supported Broker Kind %q", t.Spec.Broker.Kind))
+	}
+
+	return r.resolveMemoryBroker(ctx, t)
+}
+
+func (r *Reconciler) resolveRedisBroker(ctx context.Context, t *eventingv1alpha1.Trigger) pkgreconciler.Event {
 	rb, err := r.rbLister.RedisBrokers(t.Namespace).Get(t.Spec.Broker.Name)
 	if err != nil {
 		if apierrs.IsNotFound(err) {
@@ -59,6 +80,31 @@ func (r *Reconciler) resolveBroker(ctx context.Context, t *eventingv1alpha1.Trig
 
 	// No need to requeue, we'll get requeued when broker changes status.
 	if !rb.IsReady() {
+		logging.FromContext(ctx).Errorw(fmt.Sprintf("Trigger %s/%s references non ready broker %q", t.Namespace, t.Name, t.Spec.Broker.Name))
+	}
+
+	return nil
+}
+
+func (r *Reconciler) resolveMemoryBroker(ctx context.Context, t *eventingv1alpha1.Trigger) pkgreconciler.Event {
+	mb, err := r.mbLister.MemoryBrokers(t.Namespace).Get(t.Spec.Broker.Name)
+	if err != nil {
+		if apierrs.IsNotFound(err) {
+			logging.FromContext(ctx).Errorw(fmt.Sprintf("Trigger %s/%s references non existing broker %q", t.Namespace, t.Name, t.Spec.Broker.Name))
+			t.Status.MarkBrokerFailed(common.ReasonBrokerDoesNotExist, "Broker %q does not exist", t.Spec.Broker.Name)
+			// No need to requeue, we will be notified when if broker is created.
+			return controller.NewPermanentError(err)
+		}
+
+		t.Status.MarkBrokerFailed(common.ReasonFailedBrokerGet, "Failed to get broker %q : %s", t.Spec.Broker, err)
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedBrokerGet,
+			"Failed to get broker for trigger %s/%s: %w", t.Namespace, t.Name, err)
+	}
+
+	t.Status.PropagateBrokerCondition(mb.Status.GetTopLevelCondition())
+
+	// No need to requeue, we'll get requeued when broker changes status.
+	if !mb.IsReady() {
 		logging.FromContext(ctx).Errorw(fmt.Sprintf("Trigger %s/%s references non ready broker %q", t.Namespace, t.Name, t.Spec.Broker.Name))
 	}
 
