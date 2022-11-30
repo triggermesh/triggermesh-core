@@ -16,7 +16,10 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: addressable-resolver
+  # There might be an addressable-resolver ClusterRole if Knative Eventing is installed.
+  # This would be a duplicate for TriggerMesh's brokers that would add support for scenarios
+  # where Knative Eventing is not installed but Knative Serving is.
+  name: addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     app.kubernetes.io/version: devel
@@ -32,7 +35,7 @@ rules: [] # Rules are automatically filled in by the controller manager.
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: service-addressable-resolver
+  name: service-addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/addressable: "true"
@@ -54,7 +57,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: serving-addressable-resolver
+  name: serving-addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/addressable: "true"
@@ -79,7 +82,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: channel-addressable-resolver
+  name: channel-addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/addressable: "true"
@@ -108,7 +111,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: broker-addressable-resolver
+  name: broker-addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/addressable: "true"
@@ -131,7 +134,7 @@ rules:
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: flows-addressable-resolver
+  name: flows-addressable-resolver-triggermesh
   labels:
     eventing.knative.dev/release: devel
     duck.knative.dev/addressable: "true"

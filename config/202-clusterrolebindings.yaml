@@ -50,4 +50,22 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
+  name: addressable-resolver-triggermesh
+
+---
+
+# If Knative Eventing is installed, use also the addressable-resolver.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggermesh-core-controller-resolver-knative
+  labels:
+    app.kubernetes.io/part-of: triggermesh
+subjects:
+- kind: ServiceAccount
+  name: triggermesh-core-controller
+  namespace: triggermesh
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
   name: addressable-resolver
