@@ -94,7 +94,7 @@ Extensions,
   triggermeshbackendid: 1666613846441-0
 Data,
   {
-    "test": "value2"
+    "test 2": "message for display target"
   }
 ```
 
@@ -132,7 +132,7 @@ Extensions,
   triggermeshbackendid: 1666613846441-0
 Data,
   {
-    "test": "value3"
+    "test 3": "not delivered, will be sent to DLS"
   }
 ```
 
