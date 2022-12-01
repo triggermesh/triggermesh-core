@@ -3,6 +3,8 @@
 ![CodeQL](https://github.com/triggermesh/triggermesh-core/actions/workflows/codeql.yaml/badge.svg?branch=main)
 ![Static](https://github.com/triggermesh/triggermesh-core/actions/workflows/static.yaml/badge.svg?branch=main)
 [![Go Report Card](https://goreportcard.com/badge/github.com/triggermesh/triggermesh-core)](https://goreportcard.com/report/github.com/triggermesh/triggermesh-core)
+[![Release](https://img.shields.io/github/v/release/triggermesh/triggermesh-core?label=release)](https://github.com/triggermesh/triggermesh-core/releases)
+[![Slack](https://img.shields.io/badge/Slack-Join%20chat-4a154b?style=flat&logo=slack)](https://join.slack.com/t/triggermesh-community/shared_invite/zt-1kngevosm-MY7kqn9h6bT08hWh8PeltA)
 
 The TriggerMesh Core components conform the basis for creating event driven applications declaratively at Kubernetes.
 
