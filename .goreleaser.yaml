@@ -1,4 +1,6 @@
-dist: releases
+# If named releases will delete the existing releases folder
+# which contains manifests used at this action.
+dist: releases-go
 
 builds:
   - id: default
@@ -37,3 +39,8 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^Merge pull request"
+
+release:
+  extra_files:
+    - glob: ./releases/manifests/triggermesh-core.yaml
+    - glob: ./releases/manifests/triggermesh-core-crds.yaml
