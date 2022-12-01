@@ -41,6 +41,39 @@ changelog:
       - "^Merge pull request"
 
 release:
+
+  header: |
+    ## Installation
+
+    Install all TriggerMesh Core custom resources:
+
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-crds.yaml
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh.yaml
+
+
+    ```console
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-crds.yaml
+    ```
+
+    ```
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-crds.yaml
+    ```
+
+    `
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-crds.yaml
+    `
+
+    \`
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-crds.yaml
+    \`
+
+
+    Install the TriggerMesh Core components:
+
+    ```console
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh.yaml
+    ```
+
   extra_files:
     - glob: ./releases/manifests/triggermesh-core.yaml
     - glob: ./releases/manifests/triggermesh-core-crds.yaml
