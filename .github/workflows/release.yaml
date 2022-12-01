@@ -21,6 +21,15 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19
+      - name: Tag manifest images
+        run: |
+          mkdir -p ./releases/manifests
+          cat ./config/namespace/1*.yaml > ./releases/manifests/triggermesh-core.yaml
+          find ./config/2*.yaml -exec cat {} \; -exec echo \; -exec echo --- \; -exec echo \; >> ./releases/manifests/triggermesh-core.yaml
+          find ./config/3*.yaml -exec cat {} \; -exec echo \; -exec echo --- \; -exec echo \; >> ./releases/manifests/triggermesh-core-crds.yaml
+          cat ./config/configmaps/*.yaml >> ./releases/manifests/triggermesh-core.yaml
+          TAG=${GITHUB_REF#refs/*/}
+          sed 's/:dev/:'"$TAG"'/g' ./config/5*.yaml >> ./releases/manifests/triggermesh-core.yaml
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:

@@ -1,4 +1,6 @@
-dist: releases
+# If named releases will delete the existing releases folder
+# which contains manifests used at this action.
+dist: releases-go
 
 builds:
   - id: default
@@ -37,3 +39,24 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^Merge pull request"
+
+release:
+
+  header: |
+    ## Installation
+
+    Install all TriggerMesh Core custom resources:
+
+    ```console
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-core-crds.yaml
+    ```
+
+    Install the TriggerMesh Core controller:
+
+    ```console
+    kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/download/{{ .Tag }}/triggermesh-core.yaml
+    ```
+
+  extra_files:
+    - glob: ./releases/manifests/triggermesh-core.yaml
+    - glob: ./releases/manifests/triggermesh-core-crds.yaml
