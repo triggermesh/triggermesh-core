@@ -20,6 +20,7 @@
 
 # Build artifacts
 /releases/
+/releases-go/
 
 # Test artifacts
 *.test
