@@ -20,10 +20,12 @@ builds:
 
 archives:
   - id: default
-    format: binary
-    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ with .Mips }}_{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}'
     replacements:
       darwin: macOS
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: 'checksums.txt'
