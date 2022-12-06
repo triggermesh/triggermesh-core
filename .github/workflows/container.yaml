@@ -41,7 +41,7 @@ jobs:
           images: gcr.io/triggermesh/triggermesh-core
           tags: |
             type=semver,pattern={{raw}}
-            latest
+            type=sha
 
       - name: Build and push image
         uses: docker/build-push-action@v3
