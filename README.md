@@ -10,7 +10,21 @@ The TriggerMesh Core components conform the basis for creating event driven appl
 
 ## Installation
 
-Devevlopment version might be unstable.
+To install TriggerMesh Core at a Kubernetes cluster apply manifests for both CRDs and Controller:
+
+```console
+# Install TriggerMesh Core CRDs
+kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/latest/download/triggermesh-core-crds.yaml
+
+# Install TriggerMesh Core Controller
+kubectl apply -f https://github.com/triggermesh/triggermesh-core/releases/latest/download/triggermesh-core.yaml
+```
+
+Refer to [releases](https://github.com/triggermesh/triggermesh-core/releases) for further information.
+
+### Development Version
+
+Development version can be installed using [ko](https://github.com/ko-build/ko)
 
 ```console
 ko apply -f ./config
