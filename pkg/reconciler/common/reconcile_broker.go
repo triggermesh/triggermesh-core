@@ -28,7 +28,9 @@ const (
 	brokerResourceSuffix           = "broker"
 	brokerDeploymentComponentLabel = "broker-deployment"
 
-	defaultBrokerServicePort = 80
+	// ports must be >1024 to be able to bind them
+	// in unprivileged environments.
+	defaultBrokerServicePort = 8080
 	metricsServicePort       = 9090
 )
 
