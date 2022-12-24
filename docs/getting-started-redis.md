@@ -23,7 +23,7 @@ Wait until the RedisBroker is ready. It will inform in its status of the URL whe
 kubectl get redisbroker demo
 
 NAME   URL                                                        AGE   READY   REASON
-demo   http://demo-rb-broker.default.svc.cluster.local:8080   10s   True
+demo   http://demo-rb-broker.default.svc.cluster.local   10s   True
 ```
 
 To be able to use the broker we will create a Pod that allow us to send events inside the Kubernetes cluster.
@@ -35,7 +35,7 @@ kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/
 It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200` which means that the broker has received it and will try to deliver them to configured triggers.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080 \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -67,7 +67,7 @@ The Trigger created above filters by CloudEvents containing `type: demo.type1` a
 Using the `curl` Pod again we can send this CloudEvent to the broker.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080 \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \
@@ -107,7 +107,7 @@ kubectl delete -f https://raw.githubusercontent.com/triggermesh/triggermesh-core
 Any event that pass the filter will try to be sent to the target, and upon failing will be delivered to the DLS.
 
 ```console
-kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local:8080 \
+kubectl exec -ti curl -- curl -v http://demo-rb-broker.default.svc.cluster.local \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \

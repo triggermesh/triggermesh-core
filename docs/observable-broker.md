@@ -31,7 +31,7 @@ Wait until the RedisBroker is ready. It will inform in its status of the URL whe
 kubectl get redisbroker metrics-demo
 
 NAME   URL                                                        AGE   READY   REASON
-demo   http://metrics-demo-rb-broker.default.svc.cluster.local:8080   10s   True
+demo   http://metrics-demo-rb-broker.default.svc.cluster.local   10s   True
 ```
 
 Prometheus can be easily installed following one of this methods:
@@ -92,7 +92,7 @@ kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/
 It is possible now to send events to the broker address by issuing curl commands. The response for ingested events must be an `HTTP 200` which means that the broker has received it and will try to deliver them to configured triggers.
 
 ```console
-kubectl exec -ti curl -- curl -v http://metrics-demo-rb-broker.default.svc.cluster.local:8080 \
+kubectl exec -ti curl -- curl -v http://metrics-demo-rb-broker.default.svc.cluster.local \
     -X POST \
     -H "Ce-Id: 1234-abcd" \
     -H "Ce-Specversion: 1.0" \

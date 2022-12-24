@@ -28,9 +28,11 @@ const (
 	brokerResourceSuffix           = "broker"
 	brokerDeploymentComponentLabel = "broker-deployment"
 
-	// ports must be >1024 to be able to bind them
+	// container ports must be >1024 to be able to bind them
 	// in unprivileged environments.
-	defaultBrokerServicePort = 8080
+	brokerContainerPort = 8080
+
+	defaultBrokerServicePort = 80
 	metricsServicePort       = 9090
 )
 
@@ -91,13 +93,13 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 
 	copts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
-		resources.ContainerAddEnvFromValue("PORT", strconv.Itoa(int(defaultBrokerServicePort))),
+		resources.ContainerAddEnvFromValue("PORT", strconv.Itoa(int(brokerContainerPort))),
 		resources.ContainerAddEnvFromValue("BROKER_NAME", name),
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", ConfigSecretKey),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
-		resources.ContainerAddPort("httpce", defaultBrokerServicePort),
+		resources.ContainerAddPort("httpce", brokerContainerPort),
 		resources.ContainerAddPort("metrics", metricsServicePort),
 	}
 
@@ -214,7 +216,7 @@ func buildBrokerService(rb eventingv1alpha1.ReconcilableBroker) *corev1.Service 
 		resources.ServiceSetType(corev1.ServiceTypeClusterIP),
 		resources.ServiceAddSelectorLabel(resources.AppComponentLabel, brokerDeploymentComponentLabel),
 		resources.ServiceAddSelectorLabel(resources.AppInstanceLabel, sn),
-		resources.ServiceAddPort("httpce", int32(brokerPort), defaultBrokerServicePort))
+		resources.ServiceAddPort("httpce", int32(brokerPort), brokerContainerPort))
 }
 
 func (r *brokerReconciler) reconcileService(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Service, error) {
