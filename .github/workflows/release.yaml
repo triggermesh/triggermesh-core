@@ -32,7 +32,7 @@ jobs:
           sed -e 's/:dev/:'"$TAG"'/g' -e 's#ko://github.com/triggermesh/triggermesh-core/cmd/core-controller#gcr.io/triggermesh/triggermesh-core:'"$TAG"'#g' ./config/5*.yaml >> ./releases/manifests/triggermesh-core.yaml
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           distribution: goreleaser
           version: latest
