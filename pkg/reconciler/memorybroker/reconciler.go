@@ -27,7 +27,7 @@ type reconciler struct {
 	brokerReconciler common.BrokerReconciler
 }
 
-// options that set Broker environment variables specific for the RedisBroker.
+// options that set Broker environment variables specific for the MemoryBroker.
 func memoryDeploymentOption(mb *eventingv1alpha1.MemoryBroker) resources.DeploymentOption {
 	return func(d *appsv1.Deployment) {
 		// Make sure the broker container exists before modifying it.
@@ -39,7 +39,7 @@ func memoryDeploymentOption(mb *eventingv1alpha1.MemoryBroker) resources.Deploym
 		c := &d.Spec.Template.Spec.Containers[0]
 
 		if mb.Spec.Memory != nil && mb.Spec.Memory.BufferSize != nil {
-			resources.ContainerAddEnvFromValue("REDIS_STREAM", strconv.Itoa(*mb.Spec.Memory.BufferSize))(c)
+			resources.ContainerAddEnvFromValue("MEMORY_BUFFER_SIZE", strconv.Itoa(*mb.Spec.Memory.BufferSize))(c)
 		}
 	}
 }
