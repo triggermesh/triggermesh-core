@@ -14,22 +14,24 @@ We define _contributions_ as:
 
 ## Contents
 
-1. [Code of Conduct](#code-of-conduct)
-
-1. [Submitting Contributions](#submitting-contributions)
-   - [Reporting Bugs](#reporting-bugs)
-   - [Requesting Features and Enhancements](#requesting-features-and-enhancements)
-   - [Submitting Code Changes](#submitting-code-changes)
-
-1. [Development Guidelines](#development-guidelines)
-
-   1. [Prerequisites](#prerequisites)
+- [Contributing to TriggerMesh](#contributing-to-triggermesh)
+  - [Contents](#contents)
+  - [Code of Conduct](#code-of-conduct)
+  - [Submitting Contributions](#submitting-contributions)
+    - [Reporting Bugs](#reporting-bugs)
+      - [Issue Description](#issue-description)
+      - [Code Styling](#code-styling)
+    - [Requesting Features and Enhancements](#requesting-features-and-enhancements)
+    - [Submitting Code Changes](#submitting-code-changes)
+  - [Development Guidelines](#development-guidelines)
+    - [Prerequisites](#prerequisites)
       - [Go Toolchain](#go-toolchain)
       - [Kubernetes](#kubernetes)
       - [ko](#ko)
-
-   1. [Running the Controller](#running-the-controller)
+    - [Running the Controller](#running-the-controller)
       - [Controller Configuration](#controller-configuration)
+        - [Configuration Read From the Environment](#configuration-read-from-the-environment)
+        - [Configuration Read From ConfigMaps](#configuration-read-from-configmaps)
       - [Locally](#locally)
 
 ## Code of Conduct
@@ -250,13 +252,6 @@ Additionally, the desired build version (container image) of each TriggerMesh co
 environment variables. The full list can be found inside the [controller's Deployment manifest][tm-allenvs]. By default,
 the controller uses the latest tagged public image from `gcr.io/triggermesh` for any given component.
 
-To use your own image instead (e.g. the result of a development build), simply set the corresponding environment
-variable to the reference of the image to use. For example:
-
-```sh
-# Use a custom build of the "Zendesk" event source adapter.
-export ZENDESKSOURCE_IMAGE=docker.io/myuser/zendesksource:devel
-```
 
 ##### Configuration Read From ConfigMaps
 

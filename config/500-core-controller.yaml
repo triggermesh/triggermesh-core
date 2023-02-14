@@ -67,11 +67,11 @@ spec:
           value: triggermesh.io
         # Deployment images
         - name: MEMORYBROKER_BROKER_IMAGE
-          value: gcr.io/triggermesh/memory-broker:dev
+          value: gcr.io/triggermesh/memory-broker:latest
         - name: REDISBROKER_REDIS_IMAGE
           value: redis/redis-stack-server:latest
         - name: REDISBROKER_BROKER_IMAGE
-          value: gcr.io/triggermesh/redis-broker:dev
+          value: gcr.io/triggermesh/redis-broker:latest
         # Pull policy for broker, REMOVE for production environments
         - name: REDISBROKER_BROKER_IMAGE_PULL_POLICY
           value: Always
