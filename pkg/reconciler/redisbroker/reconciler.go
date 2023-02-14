@@ -58,7 +58,7 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 		if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil {
 			maxLen = strconv.Itoa(*rb.Spec.Redis.StreamMaxLen)
 		}
-		resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", maxLen)(c)
+		resources.ContainerAddEnvFromValue("REDIS_STREAM_MAX_LEN", maxLen)(c)
 
 		if rb.IsUserProvidedRedis() {
 			resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL)(c)
