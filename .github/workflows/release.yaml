@@ -29,7 +29,7 @@ jobs:
           find ./config/3*.yaml -exec cat {} \; -exec echo \; -exec echo --- \; -exec echo \; >> ./releases/manifests/triggermesh-core-crds.yaml
           find ./config/configmaps/*.yaml -exec cat {} \; -exec echo \; -exec echo --- \; -exec echo \; >> ./releases/manifests/triggermesh-core.yaml
           TAG=${GITHUB_REF#refs/*/}
-          sed -e 's/:latest/:'"$TAG"'/g' -e 's#ko://github.com/triggermesh/triggermesh-core/cmd/core-controller#gcr.io/triggermesh/triggermesh-core:'"$TAG"'#g' ./config/5*.yaml >> ./releases/manifests/triggermesh-core.yaml
+          sed -e 's/broker:latest/broker:'"$TAG"'/g' -e 's#ko://github.com/triggermesh/triggermesh-core/cmd/core-controller#gcr.io/triggermesh/triggermesh-core:'"$TAG"'#g' ./config/5*.yaml >> ./releases/manifests/triggermesh-core.yaml
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
