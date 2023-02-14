@@ -23,6 +23,10 @@ import (
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
+const (
+	defaultMaxLen = "1000"
+)
+
 type reconciler struct {
 	secretReconciler common.SecretReconciler
 	saReconciler     common.ServiceAccountReconciler
@@ -50,9 +54,11 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 		}
 		resources.ContainerAddEnvFromValue("REDIS_STREAM", stream)(c)
 
-		if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil && *rb.Spec.Redis.StreamMaxLen != 0 {
-			resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", stream)(c)
+		maxLen := defaultMaxLen
+		if rb.Spec.Redis != nil && rb.Spec.Redis.StreamMaxLen != nil {
+			maxLen = strconv.Itoa(*rb.Spec.Redis.StreamMaxLen)
 		}
+		resources.ContainerAddEnvFromValue("REDIS_STREAM_MAXLEN", maxLen)(c)
 
 		if rb.IsUserProvidedRedis() {
 			resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL)(c)
