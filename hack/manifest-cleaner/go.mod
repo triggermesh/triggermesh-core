@@ -1,11 +1,11 @@
 module manifest-cleaner
 
-go 1.17
+go 1.19
 
 require (
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936
 	github.com/google/go-cmp v0.5.6
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require golang.org/x/sys v0.5.0 // indirect
