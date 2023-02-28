@@ -20,7 +20,6 @@ import (
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	"knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -64,7 +63,7 @@ func NewController(
 	serviceAccountInformer := serviceaccount.Get(ctx)
 	roleBindingsInformer := rolebindingsinformer.Get(ctx)
 
-	_ = rolebinding.Get(ctx)
+	_ = rolebindingsinformer.Get(ctx)
 
 	r := &reconciler{
 		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),

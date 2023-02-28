@@ -14,7 +14,9 @@ metadata:
 spec:
   redis:
     connection: <Provides a connection to an external Redis instance. Optional>
-        url: <redis URL. Required>
+        url: <redis URL. Required if clusterURLs not informed>
+        clusterURLs:
+        - <an entry for each redis URL in the cluster. Required if url not informed>
         username: <redis username, referenced using a Kubernetes secret>
           secretKeyRef:
             name: <Kubernetes secret name>

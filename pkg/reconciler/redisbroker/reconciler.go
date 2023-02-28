@@ -7,11 +7,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
@@ -61,7 +61,16 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 		resources.ContainerAddEnvFromValue("REDIS_STREAM_MAX_LEN", maxLen)(c)
 
 		if rb.IsUserProvidedRedis() {
-			resources.ContainerAddEnvFromValue("REDIS_ADDRESS", rb.Spec.Redis.Connection.URL)(c)
+
+			// Standalone connections require an address, while cluster connections require an
+			// address list of each endpoint available for the initial connection.
+			if rb.Spec.Redis.Connection.ClusterURLs != nil &&
+				len(rb.Spec.Redis.Connection.ClusterURLs) != 0 {
+				resources.ContainerAddEnvFromValue("REDIS_CLUSTER_ADDRESSES",
+					strings.Join(rb.Spec.Redis.Connection.ClusterURLs, ","))(c)
+			} else {
+				resources.ContainerAddEnvFromValue("REDIS_ADDRESS", *rb.Spec.Redis.Connection.URL)(c)
+			}
 
 			if rb.Spec.Redis.Connection.Username != nil {
 				resources.ContainerAddEnvVarFromSecret("REDIS_USERNAME",
@@ -123,7 +132,7 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	return nil
 }
 
-func getServiceAddress(svc *v1.Service) *apis.URL {
+func getServiceAddress(svc *corev1.Service) *apis.URL {
 	var port string
 	if svc.Spec.Ports[0].Port != 80 {
 		port = ":" + strconv.Itoa(int(svc.Spec.Ports[0].Port))
