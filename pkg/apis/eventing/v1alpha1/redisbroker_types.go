@@ -43,8 +43,11 @@ var (
 )
 
 type RedisConnection struct {
-	// Redis URL.
-	URL string `json:"url"`
+	// Redis URL for standalone instances
+	URL *string `json:"url,omitempty"`
+
+	// Redis URLs for cluster instances
+	ClusterURLs []string `json:"clusterURLs,omitempty"`
 
 	// Redis username.
 	Username *SecretValueFromSource `json:"username,omitempty"`
