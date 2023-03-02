@@ -160,7 +160,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 		trg := broker.Trigger{
 			Filters: t.Spec.Filters,
 			Target: broker.Target{
-				URL:             targetURI,
+				URL:             &targetURI,
 				DeliveryOptions: do,
 			},
 		}
