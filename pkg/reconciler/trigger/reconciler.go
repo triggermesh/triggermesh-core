@@ -44,7 +44,10 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Trig
 func (r *Reconciler) resolveBroker(ctx context.Context, t *eventingv1alpha1.Trigger) pkgreconciler.Event {
 	// TODO duck
 	// TODO move to webhook
-	if t.Spec.Broker.Group != "" && t.Spec.Broker.Group != eventingv1alpha1.SchemeGroupVersion.Group {
+	switch {
+	case t.Spec.Broker.Group == "":
+		t.Spec.Broker.Group = eventingv1alpha1.SchemeGroupVersion.Group
+	case t.Spec.Broker.Group != eventingv1alpha1.SchemeGroupVersion.Group:
 		return controller.NewPermanentError(fmt.Errorf("not supported Broker Group %q", t.Spec.Broker.Group))
 	}
 
