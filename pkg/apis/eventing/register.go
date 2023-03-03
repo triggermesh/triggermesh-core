@@ -1,3 +1,6 @@
+// Copyright 2023 TriggerMesh Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package eventing
 
 import "k8s.io/apimachinery/pkg/runtime/schema"
