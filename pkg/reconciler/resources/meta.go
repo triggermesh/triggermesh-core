@@ -58,3 +58,9 @@ func MetaAddLabel(key, value string) MetaOption {
 		m.Labels[key] = value
 	}
 }
+
+func MetaSetDeletion(t *metav1.Time) MetaOption {
+	return func(m *metav1.ObjectMeta) {
+		m.DeletionTimestamp = t
+	}
+}
