@@ -15,7 +15,10 @@ require (
 	sigs.k8s.io/yaml v1.3.0
 )
 
-require golang.org/x/net v0.7.0 // indirect
+require (
+	github.com/benbjohnson/clock v1.1.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
+)
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.7.1-0.20200907061046-05415f1de66d // indirect
