@@ -97,7 +97,9 @@ func MakeFactory(ctor Ctor, unstructured bool, logger *zap.SugaredLogger) rt.Fac
 
 		// If the reconcilers is leader aware, then promote it.
 		if la, ok := c.(reconciler.LeaderAware); ok {
-			la.Promote(reconciler.UniversalBucket(), func(reconciler.Bucket, types.NamespacedName) {})
+			if err := la.Promote(reconciler.UniversalBucket(), func(reconciler.Bucket, types.NamespacedName) {}); err != nil {
+				panic(err)
+			}
 		}
 
 		// Validate all Create operations through the eventing client.
