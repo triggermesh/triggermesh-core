@@ -5,11 +5,16 @@ package resources
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	tNow = metav1.NewTime(time.Now())
 )
 
 func TestNewMeta(t *testing.T) {
@@ -49,6 +54,15 @@ func TestNewMeta(t *testing.T) {
 				Labels: map[string]string{
 					"key1": "label1",
 				},
+			}},
+		"with deletion": {
+			options: []MetaOption{
+				MetaSetDeletion(&tNow),
+			},
+			expected: metav1.ObjectMeta{
+				Name:              tName,
+				Namespace:         tNamespace,
+				DeletionTimestamp: &tNow,
 			}},
 	}
 

@@ -3,6 +3,7 @@ package memorybroker
 import (
 	"context"
 	"testing"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +20,7 @@ import (
 	fakeeventingclient "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/client/fake"
 	"github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	tmt "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing"
 	tmtv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing/v1alpha1"
 )
@@ -34,6 +36,7 @@ var (
 	tKey            = tNamespace + "/" + tName
 	tTrue           = true
 	tReplicas int32 = 1
+	tNow            = metav1.NewTime(time.Now())
 )
 
 func TestAllCases(t *testing.T) {
@@ -61,6 +64,16 @@ func TestAllCases(t *testing.T) {
 			},
 			WantEvents: []string{
 				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
+			},
+		}, {
+			Name: "deleting broker",
+			Key:  tKey,
+			Objects: []runtime.Object{
+				tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
+					tmtv1alpha1.MemoryBrokerWithMetaOptions(resources.MetaSetDeletion(&tNow))),
+			},
+			WantCreates: []runtime.Object{
+				// Reconciliation is skipped and no objects are created.
 			},
 		},
 	}

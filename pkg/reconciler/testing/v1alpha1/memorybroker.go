@@ -4,6 +4,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 )
 
 // MemoryBrokerOption enables further configuration of a v1alpha1.MemoryBroker.
@@ -24,4 +25,12 @@ func NewMemoryBroker(namespace, name string, opts ...MemoryBrokerOption) *eventi
 	}
 
 	return b
+}
+
+func MemoryBrokerWithMetaOptions(opts ...resources.MetaOption) MemoryBrokerOption {
+	return func(d *eventingv1alpha1.MemoryBroker) {
+		for _, opt := range opts {
+			opt(&d.ObjectMeta)
+		}
+	}
 }
