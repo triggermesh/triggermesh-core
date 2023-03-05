@@ -1,3 +1,6 @@
+// Copyright 2023 TriggerMesh Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 package common
 
 import (
@@ -23,7 +26,9 @@ import (
 
 const (
 	// Broker ClusterRole that was created as part of TriggerMesh core installation.
-	BrokerDeploymentRole = "triggermesh-broker"
+	BrokerDeploymentRole         = "triggermesh-broker"
+	serviceAccountResourceSuffix = "broker"
+	roleBindingResourceSuffix    = "broker"
 )
 
 type ServiceAccountReconciler interface {
@@ -62,7 +67,7 @@ func (r *serviceAccountReconciler) Reconcile(ctx context.Context, rb eventingv1a
 
 func buildBrokerServiceAccount(rb eventingv1alpha1.ReconcilableBroker) *corev1.ServiceAccount {
 	meta := rb.GetObjectMeta()
-	ns, name := meta.GetNamespace(), meta.GetName()+"-"+rb.GetOwnedObjectsSuffix()+"-"+secretResourceSuffix
+	ns, name := meta.GetNamespace(), meta.GetName()+"-"+rb.GetOwnedObjectsSuffix()+"-"+serviceAccountResourceSuffix
 
 	return resources.NewServiceAccount(ns, name,
 		resources.ServiceAccountWithMetaOptions(
@@ -112,7 +117,7 @@ func (r *serviceAccountReconciler) reconcileServiceAccount(ctx context.Context, 
 
 func buildBrokerRoleBinding(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount) *rbacv1.RoleBinding {
 	meta := rb.GetObjectMeta()
-	ns, name := meta.GetNamespace(), meta.GetName()+"-"+rb.GetOwnedObjectsSuffix()+"-"+secretResourceSuffix
+	ns, name := meta.GetNamespace(), meta.GetName()+"-"+rb.GetOwnedObjectsSuffix()+"-"+roleBindingResourceSuffix
 
 	return resources.NewRoleBinding(ns, name, BrokerDeploymentRole, sa.Name,
 		resources.RoleBindingWithMetaOptions(
