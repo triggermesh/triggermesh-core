@@ -283,13 +283,13 @@ func (r *brokerReconciler) reconcileEndpoints(ctx context.Context, service *core
 
 		rb.GetReconcilableBrokerStatus().MarkBrokerEndpointsFailed(ReasonUnavailableEndpoints, "Endpoints for broker service are not available")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonUnavailableEndpoints,
-			"Endpoints for broker service are not available %s",
+			"Endpoints for broker service %q are not available",
 			types.NamespacedName{Namespace: ep.Namespace, Name: ep.Name})
 
 	case apierrs.IsNotFound(err):
 		rb.GetReconcilableBrokerStatus().MarkBrokerEndpointsFailed(ReasonUnavailableEndpoints, "Endpoints for broker service do not exist")
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonUnavailableEndpoints,
-			"Endpoints for broker service do not exist %s",
+			"Endpoints for broker service %q do not exist",
 			types.NamespacedName{Namespace: service.Namespace, Name: service.Name})
 	}
 

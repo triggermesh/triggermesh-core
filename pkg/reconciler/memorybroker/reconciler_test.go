@@ -4,10 +4,12 @@ import (
 	"context"
 	"testing"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	v1addr "knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -23,13 +25,15 @@ import (
 
 const (
 	tBrokerImage  = "image.test:v.test"
-	testNamespace = "test-namespace"
-	testName      = "test-name"
+	tNamespace    = "test-namespace"
+	tName         = "test-name"
+	tBrokerSuffix = "-mb-broker"
 )
 
 var (
-	tKey  = testNamespace + "/" + testName
-	tTrue = true
+	tKey            = tNamespace + "/" + tName
+	tTrue           = true
+	tReplicas int32 = 1
 )
 
 func TestAllCases(t *testing.T) {
@@ -46,12 +50,17 @@ func TestAllCases(t *testing.T) {
 			Name: "new broker",
 			Key:  tKey,
 			Objects: []runtime.Object{
-				tmtv1alpha1.NewMemoryBroker(testNamespace, testName),
+				tmtv1alpha1.NewMemoryBroker(tNamespace, tName),
 			},
 			WantCreates: []runtime.Object{
-				newSecretForBroker(testNamespace, testName),
-				newServiceAccountForBroker(testNamespace, testName),
-				newRoleBindingForBroker(testNamespace, testName),
+				newSecretForBroker(tNamespace, tName),
+				newServiceAccountForBroker(tNamespace, tName),
+				newRoleBindingForBroker(tNamespace, tName),
+				newDeploymentForBroker(tNamespace, tName),
+				newServiceForBroker(tNamespace, tName),
+			},
+			WantEvents: []string{
+				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
 			},
 		},
 	}
@@ -127,10 +136,10 @@ func newServiceAccountForBroker(namespace, name string) *corev1.ServiceAccount {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name + "-mb-broker",
+			Name:      name + tBrokerSuffix,
 			Labels: map[string]string{
 				"app.kubernetes.io/component":  "broker-serviceaccount",
-				"app.kubernetes.io/instance":   name + "-mb-broker",
+				"app.kubernetes.io/instance":   name + tBrokerSuffix,
 				"app.kubernetes.io/managed-by": "triggermesh-core",
 				"app.kubernetes.io/name":       "memorybroker",
 				"app.kubernetes.io/part-of":    "triggermesh",
@@ -158,10 +167,10 @@ func newRoleBindingForBroker(namespace, name string) *rbacv1.RoleBinding {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name + "-mb-broker",
+			Name:      name + tBrokerSuffix,
 			Labels: map[string]string{
 				"app.kubernetes.io/component":  "broker-rolebinding",
-				"app.kubernetes.io/instance":   name + "mb-broker",
+				"app.kubernetes.io/instance":   name + tBrokerSuffix,
 				"app.kubernetes.io/managed-by": "triggermesh-core",
 				"app.kubernetes.io/name":       "memorybroker",
 				"app.kubernetes.io/part-of":    "triggermesh",
@@ -177,7 +186,7 @@ func newRoleBindingForBroker(namespace, name string) *rbacv1.RoleBinding {
 			},
 		},
 		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: name + "-mb-broker", Namespace: namespace},
+			{Kind: "ServiceAccount", Name: name + tBrokerSuffix, Namespace: namespace},
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -187,4 +196,136 @@ func newRoleBindingForBroker(namespace, name string) *rbacv1.RoleBinding {
 	}
 
 	return rb
+}
+
+func newServiceForBroker(namespace, name string) *corev1.Service {
+	s := &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name + tBrokerSuffix,
+			Labels: map[string]string{
+				"app.kubernetes.io/component":  "broker-service",
+				"app.kubernetes.io/instance":   name + tBrokerSuffix,
+				"app.kubernetes.io/managed-by": "triggermesh-core",
+				"app.kubernetes.io/name":       "memorybroker",
+				"app.kubernetes.io/part-of":    "triggermesh",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         "eventing.triggermesh.io/v1alpha1",
+					Kind:               "MemoryBroker",
+					Name:               name,
+					Controller:         &tTrue,
+					BlockOwnerDeletion: &tTrue,
+				},
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app.kubernetes.io/component": "broker-deployment",
+				"app.kubernetes.io/instance":  name + "-mb-broker",
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name: "httpce",
+					Port: 80,
+					TargetPort: intstr.IntOrString{
+						IntVal: 8080,
+					},
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+
+	return s
+}
+
+func newDeploymentForBroker(namespace, name string) *appsv1.Deployment {
+	d := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "Deployment",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name + tBrokerSuffix,
+			Labels: map[string]string{
+				"app.kubernetes.io/component":  "broker-deployment",
+				"app.kubernetes.io/instance":   name + tBrokerSuffix,
+				"app.kubernetes.io/managed-by": "triggermesh-core",
+				"app.kubernetes.io/name":       "memorybroker",
+				"app.kubernetes.io/part-of":    "triggermesh",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         "eventing.triggermesh.io/v1alpha1",
+					Kind:               "MemoryBroker",
+					Name:               name,
+					Controller:         &tTrue,
+					BlockOwnerDeletion: &tTrue,
+				},
+			},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &tReplicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app.kubernetes.io/component": "broker-deployment",
+					"app.kubernetes.io/instance":  name + tBrokerSuffix,
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app.kubernetes.io/component":  "broker-deployment",
+						"app.kubernetes.io/instance":   name + tBrokerSuffix,
+						"app.kubernetes.io/managed-by": "triggermesh-core",
+						"app.kubernetes.io/part-of":    "triggermesh",
+					},
+				},
+				Spec: corev1.PodSpec{
+					ServiceAccountName: name + tBrokerSuffix,
+					Containers: []corev1.Container{
+						{
+							Name:            "broker",
+							Image:           tBrokerImage,
+							Args:            []string{"start"},
+							ImagePullPolicy: corev1.PullAlways,
+							Ports: []corev1.ContainerPort{
+								{
+									Name:          "httpce",
+									ContainerPort: 8080,
+								},
+								{
+									Name:          "metrics",
+									ContainerPort: 9090,
+								},
+							},
+							Env: []corev1.EnvVar{
+								{Name: "PORT", Value: "8080"},
+								{Name: "BROKER_NAME", Value: name},
+								{
+									Name: "KUBERNETES_NAMESPACE",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.namespace",
+										},
+									},
+								},
+								{Name: "KUBERNETES_BROKER_CONFIG_SECRET_NAME", Value: name + "-mb-config"},
+								{Name: "KUBERNETES_BROKER_CONFIG_SECRET_KEY", Value: "config"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return d
 }
