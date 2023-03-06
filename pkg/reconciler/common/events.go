@@ -11,9 +11,10 @@ const (
 	ReasonFailedDeploymentCreate = "FailedDeploymentCreate"
 	ReasonFailedDeploymentUpdate = "FailedDeploymentUpdate"
 
-	ReasonFailedSecretGet    = "FailedSecretGet"
-	ReasonFailedSecretCreate = "FailedSecretCreate"
-	ReasonFailedSecretUpdate = "FailedSecretUpdate"
+	ReasonFailedSecretCompose = "FailedSecretCompose"
+	ReasonFailedSecretGet     = "FailedSecretGet"
+	ReasonFailedSecretCreate  = "FailedSecretCreate"
+	ReasonFailedSecretUpdate  = "FailedSecretUpdate"
 
 	ReasonFailedServiceAccountGet    = "FailedServiceAccountGet"
 	ReasonFailedServiceAccountCreate = "FailedServiceAccountCreate"

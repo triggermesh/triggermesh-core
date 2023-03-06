@@ -57,6 +57,7 @@ func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretL
 func (r *secretReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Secret, error) {
 	desired, err := r.buildConfigSecret(ctx, rb)
 	if err != nil {
+		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedSecretCompose, "Failed to compose secret config from broker")
 		return nil, err
 	}
 

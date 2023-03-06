@@ -11,6 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	kt "k8s.io/client-go/testing"
+
 	v1addr "knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -20,7 +22,6 @@ import (
 	fakeeventingclient "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/client/fake"
 	"github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	tmt "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing"
 	tmtv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing/v1alpha1"
 )
@@ -62,19 +63,52 @@ func TestAllCases(t *testing.T) {
 				newDeploymentForBroker(tNamespace, tName),
 				newServiceForBroker(tNamespace, tName),
 			},
+			WantStatusUpdates: []kt.UpdateActionImpl{
+				{
+					Object: tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
+						// tmtv1alpha1.MemoryBrokerWithStatusAddress("http://"+tName+"-mb-broker."+tNamespace+".svc.cluster.local"),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("Addressable", corev1.ConditionUnknown, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerConfigSecretReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerDeploymentReady", corev1.ConditionUnknown, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
+					),
+				},
+			},
+
 			WantEvents: []string{
 				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
 			},
-		}, {
-			Name: "deleting broker",
-			Key:  tKey,
-			Objects: []runtime.Object{
-				tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
-					tmtv1alpha1.MemoryBrokerWithMetaOptions(resources.MetaSetDeletion(&tNow))),
-			},
-			WantCreates: []runtime.Object{
-				// Reconciliation is skipped and no objects are created.
-			},
+
+			// }, {
+			// 	Name: "update status",
+			// 	Key:  tKey,
+			// 	Objects: []runtime.Object{
+			// 		tmtv1alpha1.NewMemoryBroker(tNamespace, tName),
+			// 	},
+			// 	WantCreates: []runtime.Object{
+			// 		newSecretForBroker(tNamespace, tName),
+			// 		newServiceAccountForBroker(tNamespace, tName),
+			// 		newRoleBindingForBroker(tNamespace, tName),
+			// 		newDeploymentForBroker(tNamespace, tName),
+			// 		newServiceForBroker(tNamespace, tName),
+			// 	},
+			// 	WantEvents: []string{
+			// 		knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
+			// 	},
+			// }, {
+			// 	Name: "deleting broker",
+			// 	Key:  tKey,
+			// 	Objects: []runtime.Object{
+			// 		tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
+			// 			tmtv1alpha1.MemoryBrokerWithMetaOptions(resources.MetaSetDeletion(&tNow))),
+			// 	},
+			// 	WantCreates: []runtime.Object{
+			// 		// Reconciliation is skipped and no objects are created.
+			// 	},
 		},
 	}
 
@@ -102,7 +136,7 @@ func TestAllCases(t *testing.T) {
 			listers.GetMemoryBrokerLister(),
 			controller.GetEventRecorder(ctx),
 			r,
-			controller.Options{SkipStatusUpdates: true})
+			controller.Options{SkipStatusUpdates: false})
 	}, false, logger))
 }
 

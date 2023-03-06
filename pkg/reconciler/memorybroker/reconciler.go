@@ -72,6 +72,10 @@ func (r *reconciler) ReconcileKind(ctx context.Context, mb *eventingv1alpha1.Mem
 }
 
 func getServiceAddress(svc *corev1.Service) *apis.URL {
+	if svc == nil || len(svc.Spec.Ports) == 0 {
+		return nil
+	}
+
 	var port string
 	if svc.Spec.Ports[0].Port != 80 {
 		port = ":" + strconv.Itoa(int(svc.Spec.Ports[0].Port))
