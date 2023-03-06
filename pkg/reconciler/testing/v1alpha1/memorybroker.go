@@ -1,7 +1,10 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	knapis "knative.dev/pkg/apis"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
@@ -32,5 +35,30 @@ func MemoryBrokerWithMetaOptions(opts ...resources.MetaOption) MemoryBrokerOptio
 		for _, opt := range opts {
 			opt(&d.ObjectMeta)
 		}
+	}
+}
+
+func MemoryBrokerWithStatusAddress(url string) MemoryBrokerOption {
+	return func(d *eventingv1alpha1.MemoryBroker) {
+
+		pu, err := knapis.ParseURL(url)
+		if err != nil {
+			panic(err)
+		}
+		d.Status.Address.URL = pu
+	}
+}
+
+func MemoryBrokerWithStatusCondition(typ string, status corev1.ConditionStatus, reason, msg string) MemoryBrokerOption {
+	return func(d *eventingv1alpha1.MemoryBroker) {
+
+		d.Status.Conditions = append(d.Status.Conditions,
+			knapis.Condition{
+				Type:    knapis.ConditionType(typ),
+				Status:  status,
+				Reason:  reason,
+				Message: msg,
+			},
+		)
 	}
 }
