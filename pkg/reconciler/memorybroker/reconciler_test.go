@@ -3,7 +3,6 @@ package memorybroker
 import (
 	"context"
 	"testing"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +36,7 @@ var (
 	tKey            = tNamespace + "/" + tName
 	tTrue           = true
 	tReplicas int32 = 1
-	tNow            = metav1.NewTime(time.Now())
+	// tNow            = metav1.NewTime(time.Now())
 )
 
 func TestAllCases(t *testing.T) {
@@ -78,7 +77,6 @@ func TestAllCases(t *testing.T) {
 					),
 				},
 			},
-
 			WantEvents: []string{
 				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
 			},
