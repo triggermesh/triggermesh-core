@@ -225,6 +225,7 @@ func buildBrokerService(rb eventingv1alpha1.ReconcilableBroker) *corev1.Service 
 func (r *brokerReconciler) reconcileService(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.Service, error) {
 	desired := buildBrokerService(rb)
 	current, err := r.serviceLister.Services(desired.Namespace).Get(desired.Name)
+
 	switch {
 	case err == nil:
 		// Set Status
