@@ -22,6 +22,8 @@ import (
 var Semantic = conversion.EqualitiesOrDie(
 	deploymentEqual,
 	serviceAccountEqual,
+	serviceEqual,
+	secretEqual,
 )
 
 // eq is an instance of Equalities for internal deep derivative comparisons
@@ -98,6 +100,46 @@ func deploymentEqual(a, b *appsv1.Deployment) bool {
 	}
 
 	if !eq.DeepDerivative(&a.Spec, &b.Spec) {
+		return false
+	}
+
+	return true
+}
+
+// serviceEqual returns whether two Services are semantically equivalent.
+func serviceEqual(a, b *corev1.Service) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	if !eq.DeepDerivative(&a.ObjectMeta, &b.ObjectMeta) {
+		return false
+	}
+
+	if !eq.DeepDerivative(&a.Spec, &b.Spec) {
+		return false
+	}
+
+	return true
+}
+
+// secretEqual returns whether two Secrets are semantically equivalent.
+func secretEqual(a, b *corev1.Secret) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	if !eq.DeepDerivative(&a.ObjectMeta, &b.ObjectMeta) {
+		return false
+	}
+
+	if !eq.DeepEqual(&a.Data, &b.Data) {
 		return false
 	}
 

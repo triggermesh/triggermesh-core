@@ -3,13 +3,11 @@ package memorybroker
 import (
 	"context"
 	"testing"
+	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	kt "k8s.io/client-go/testing"
 
 	v1addr "knative.dev/pkg/client/injection/ducks/duck/v1/addressable"
@@ -21,25 +19,24 @@ import (
 	fakeeventingclient "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/client/fake"
 	"github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
+	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	tmt "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing"
+	tresources "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing/resources"
 	tmtv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/reconciler/testing/v1alpha1"
 )
 
-const (
-	tBrokerImage  = "image.test:v.test"
-	tNamespace    = "test-namespace"
-	tName         = "test-name"
-	tBrokerSuffix = "-mb-broker"
-)
-
 var (
-	tKey            = tNamespace + "/" + tName
-	tTrue           = true
-	tReplicas int32 = 1
-	// tNow            = metav1.NewTime(time.Now())
+	tKey  = tresources.TestNamespace + "/" + tresources.TestName
+	tTrue = true
+	tNow  = metav1.NewTime(time.Now())
 )
 
 func TestAllCases(t *testing.T) {
+	bh := tresources.BrokerHelper{
+		Suffix: "mb",
+		Kind:   "MemoryBroker",
+	}
+
 	table := knt.TableTest{
 		{
 			Name: "bad workqueue key",
@@ -53,19 +50,18 @@ func TestAllCases(t *testing.T) {
 			Name: "new broker",
 			Key:  tKey,
 			Objects: []runtime.Object{
-				tmtv1alpha1.NewMemoryBroker(tNamespace, tName),
+				tmtv1alpha1.NewMemoryBroker(tresources.TestNamespace, tresources.TestName),
 			},
 			WantCreates: []runtime.Object{
-				newSecretForBroker(tNamespace, tName),
-				newServiceAccountForBroker(tNamespace, tName),
-				newRoleBindingForBroker(tNamespace, tName),
-				newDeploymentForBroker(tNamespace, tName),
-				newServiceForBroker(tNamespace, tName),
+				newSecretForBroker(tresources.TestNamespace, tresources.TestName),
+				tresources.NewServiceAccountForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewRoleBindingForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewDeploymentForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewServiceForBroker(tresources.TestNamespace, tresources.TestName, bh),
 			},
 			WantStatusUpdates: []kt.UpdateActionImpl{
 				{
-					Object: tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
-						// tmtv1alpha1.MemoryBrokerWithStatusAddress("http://"+tName+"-mb-broker."+tNamespace+".svc.cluster.local"),
+					Object: tmtv1alpha1.NewMemoryBroker(tresources.TestNamespace, tresources.TestName,
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("Addressable", corev1.ConditionUnknown, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerConfigSecretReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerDeploymentReady", corev1.ConditionUnknown, "", ""),
@@ -78,41 +74,61 @@ func TestAllCases(t *testing.T) {
 				},
 			},
 			WantEvents: []string{
-				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
+				knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tresources.TestNamespace+`/`+tresources.TestName+`-mb-broker" do not exist`),
 			},
-
-			// }, {
-			// 	Name: "update status",
-			// 	Key:  tKey,
-			// 	Objects: []runtime.Object{
-			// 		tmtv1alpha1.NewMemoryBroker(tNamespace, tName),
-			// 	},
-			// 	WantCreates: []runtime.Object{
-			// 		newSecretForBroker(tNamespace, tName),
-			// 		newServiceAccountForBroker(tNamespace, tName),
-			// 		newRoleBindingForBroker(tNamespace, tName),
-			// 		newDeploymentForBroker(tNamespace, tName),
-			// 		newServiceForBroker(tNamespace, tName),
-			// 	},
-			// 	WantEvents: []string{
-			// 		knt.Eventf(corev1.EventTypeWarning, "UnavailableEndpoints", `Endpoints for broker service "`+tNamespace+`/`+tName+`-mb-broker" do not exist`),
-			// 	},
-			// }, {
-			// 	Name: "deleting broker",
-			// 	Key:  tKey,
-			// 	Objects: []runtime.Object{
-			// 		tmtv1alpha1.NewMemoryBroker(tNamespace, tName,
-			// 			tmtv1alpha1.MemoryBrokerWithMetaOptions(resources.MetaSetDeletion(&tNow))),
-			// 	},
-			// 	WantCreates: []runtime.Object{
-			// 		// Reconciliation is skipped and no objects are created.
-			// 	},
+		}, {
+			Name: "update status",
+			Key:  tKey,
+			Objects: []runtime.Object{
+				tmtv1alpha1.NewMemoryBroker(tresources.TestNamespace, tresources.TestName,
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("Addressable", corev1.ConditionUnknown, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerConfigSecretReady", corev1.ConditionTrue, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerDeploymentReady", corev1.ConditionUnknown, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
+				),
+				newSecretForBroker(tresources.TestNamespace, tresources.TestName),
+				tresources.NewServiceAccountForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewRoleBindingForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewDeploymentForBroker(tresources.TestNamespace, tresources.TestName, bh, tresources.WithDeploymentReady()),
+				tresources.NewServiceForBroker(tresources.TestNamespace, tresources.TestName, bh),
+				tresources.NewEndpointForBroker(tresources.TestNamespace, tresources.TestName, bh),
+			},
+			WantStatusUpdates: []kt.UpdateActionImpl{
+				{
+					Object: tmtv1alpha1.NewMemoryBroker(tresources.TestNamespace, tresources.TestName,
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("Addressable", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerConfigSecretReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerDeploymentReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusAddress("http://"+tresources.TestName+"-mb-broker."+tresources.TestNamespace+".svc.cluster.local"),
+					),
+				},
+			},
+		}, {
+			Name: "deleting broker",
+			Key:  tKey,
+			Objects: []runtime.Object{
+				tmtv1alpha1.NewMemoryBroker(tresources.TestNamespace, tresources.TestName,
+					tmtv1alpha1.MemoryBrokerWithMetaOptions(resources.MetaSetDeletion(&tNow))),
+			},
+			WantCreates: []runtime.Object{
+				// Reconciliation is skipped and no objects are created.
+			},
 		},
 	}
 
 	logger := logtesting.TestLogger(t)
 	table.Test(t, tmt.MakeFactory(func(ctx context.Context, listers *tmt.Listers, cmw configmap.Watcher) controller.Reconciler {
 		ctx = v1addr.WithDuck(ctx)
+
 		r := &reconciler{
 			secretReconciler: common.NewSecretReconciler(ctx,
 				listers.GetSecretLister(),
@@ -126,7 +142,7 @@ func TestAllCases(t *testing.T) {
 				listers.GetDeploymentLister(),
 				listers.GetServiceLister(),
 				listers.GetEndpointsLister(),
-				tBrokerImage, corev1.PullAlways),
+				tresources.TestBrokerImage, corev1.PullAlways),
 		}
 
 		return memorybroker.NewReconciler(ctx, logger,
@@ -171,206 +187,4 @@ func newSecretForBroker(namespace, name string) *corev1.Secret {
 	}
 
 	return s
-}
-
-func newServiceAccountForBroker(namespace, name string) *corev1.ServiceAccount {
-	sa := &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ServiceAccount",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name + tBrokerSuffix,
-			Labels: map[string]string{
-				"app.kubernetes.io/component":  "broker-serviceaccount",
-				"app.kubernetes.io/instance":   name + tBrokerSuffix,
-				"app.kubernetes.io/managed-by": "triggermesh-core",
-				"app.kubernetes.io/name":       "memorybroker",
-				"app.kubernetes.io/part-of":    "triggermesh",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "eventing.triggermesh.io/v1alpha1",
-					Kind:               "MemoryBroker",
-					Name:               name,
-					Controller:         &tTrue,
-					BlockOwnerDeletion: &tTrue,
-				},
-			},
-		},
-	}
-
-	return sa
-}
-
-func newRoleBindingForBroker(namespace, name string) *rbacv1.RoleBinding {
-	rb := &rbacv1.RoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rbac.authorization.k8s.io/v1",
-			Kind:       "RoleBinding",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name + tBrokerSuffix,
-			Labels: map[string]string{
-				"app.kubernetes.io/component":  "broker-rolebinding",
-				"app.kubernetes.io/instance":   name + tBrokerSuffix,
-				"app.kubernetes.io/managed-by": "triggermesh-core",
-				"app.kubernetes.io/name":       "memorybroker",
-				"app.kubernetes.io/part-of":    "triggermesh",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "eventing.triggermesh.io/v1alpha1",
-					Kind:               "MemoryBroker",
-					Name:               name,
-					Controller:         &tTrue,
-					BlockOwnerDeletion: &tTrue,
-				},
-			},
-		},
-		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: name + tBrokerSuffix, Namespace: namespace},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "triggermesh-broker",
-		},
-	}
-
-	return rb
-}
-
-func newServiceForBroker(namespace, name string) *corev1.Service {
-	s := &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name + tBrokerSuffix,
-			Labels: map[string]string{
-				"app.kubernetes.io/component":  "broker-service",
-				"app.kubernetes.io/instance":   name + tBrokerSuffix,
-				"app.kubernetes.io/managed-by": "triggermesh-core",
-				"app.kubernetes.io/name":       "memorybroker",
-				"app.kubernetes.io/part-of":    "triggermesh",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "eventing.triggermesh.io/v1alpha1",
-					Kind:               "MemoryBroker",
-					Name:               name,
-					Controller:         &tTrue,
-					BlockOwnerDeletion: &tTrue,
-				},
-			},
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app.kubernetes.io/component": "broker-deployment",
-				"app.kubernetes.io/instance":  name + "-mb-broker",
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Name: "httpce",
-					Port: 80,
-					TargetPort: intstr.IntOrString{
-						IntVal: 8080,
-					},
-				},
-			},
-			Type: corev1.ServiceTypeClusterIP,
-		},
-	}
-
-	return s
-}
-
-func newDeploymentForBroker(namespace, name string) *appsv1.Deployment {
-	d := &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "apps/v1",
-			Kind:       "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
-			Name:      name + tBrokerSuffix,
-			Labels: map[string]string{
-				"app.kubernetes.io/component":  "broker-deployment",
-				"app.kubernetes.io/instance":   name + tBrokerSuffix,
-				"app.kubernetes.io/managed-by": "triggermesh-core",
-				"app.kubernetes.io/name":       "memorybroker",
-				"app.kubernetes.io/part-of":    "triggermesh",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         "eventing.triggermesh.io/v1alpha1",
-					Kind:               "MemoryBroker",
-					Name:               name,
-					Controller:         &tTrue,
-					BlockOwnerDeletion: &tTrue,
-				},
-			},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &tReplicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app.kubernetes.io/component": "broker-deployment",
-					"app.kubernetes.io/instance":  name + tBrokerSuffix,
-				},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app.kubernetes.io/component":  "broker-deployment",
-						"app.kubernetes.io/instance":   name + tBrokerSuffix,
-						"app.kubernetes.io/managed-by": "triggermesh-core",
-						"app.kubernetes.io/part-of":    "triggermesh",
-					},
-				},
-				Spec: corev1.PodSpec{
-					ServiceAccountName: name + tBrokerSuffix,
-					Containers: []corev1.Container{
-						{
-							Name:            "broker",
-							Image:           tBrokerImage,
-							Args:            []string{"start"},
-							ImagePullPolicy: corev1.PullAlways,
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          "httpce",
-									ContainerPort: 8080,
-								},
-								{
-									Name:          "metrics",
-									ContainerPort: 9090,
-								},
-							},
-							Env: []corev1.EnvVar{
-								{Name: "PORT", Value: "8080"},
-								{Name: "BROKER_NAME", Value: name},
-								{
-									Name: "KUBERNETES_NAMESPACE",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.namespace",
-										},
-									},
-								},
-								{Name: "KUBERNETES_BROKER_CONFIG_SECRET_NAME", Value: name + "-mb-config"},
-								{Name: "KUBERNETES_BROKER_CONFIG_SECRET_KEY", Value: "config"},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return d
 }
