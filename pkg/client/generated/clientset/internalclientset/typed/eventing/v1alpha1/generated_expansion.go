@@ -8,4 +8,6 @@ type MemoryBrokerExpansion interface{}
 
 type RedisBrokerExpansion interface{}
 
+type RedisReplayExpansion interface{}
+
 type TriggerExpansion interface{}

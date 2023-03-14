@@ -16,6 +16,7 @@ type EventingV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	MemoryBrokersGetter
 	RedisBrokersGetter
+	RedisReplaysGetter
 	TriggersGetter
 }
 
@@ -30,6 +31,10 @@ func (c *EventingV1alpha1Client) MemoryBrokers(namespace string) MemoryBrokerInt
 
 func (c *EventingV1alpha1Client) RedisBrokers(namespace string) RedisBrokerInterface {
 	return newRedisBrokers(c, namespace)
+}
+
+func (c *EventingV1alpha1Client) RedisReplays(namespace string) RedisReplayInterface {
+	return newRedisReplays(c, namespace)
 }
 
 func (c *EventingV1alpha1Client) Triggers(namespace string) TriggerInterface {
