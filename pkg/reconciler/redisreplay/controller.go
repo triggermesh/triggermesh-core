@@ -9,11 +9,21 @@ import (
 	"github.com/kelseyhightower/envconfig"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/tools/cache"
 
-	redisreplayclient "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/client"
+	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
+	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+
+	"github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	rrinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
 )
 
 // envConfig will be used to extract the required environment variables using
@@ -53,10 +63,10 @@ func NewController(
 	rolebindingInformer := rolebindingsinformer.Get(ctx)
 	serviceaccountInformer := serviceaccount.Get(ctx)
 
-	r := &Reconciler{
+	r := &RedisReplayReconciler{
 		kubeClientSet:     kubeclient.Get(ctx),
 		redisReplayLister: rrInformer.Lister(),
-		redisReplayClient: redisreplayclient.Get(ctx),
+		// redisReplayClient: redisreplayclient.Get(ctx),
 		secretLister:      secretInformer.Lister(),
 		deploymentLister:  deploymentInformer.Lister(),
 		serviceLister:     serviceInformer.Lister(),
@@ -75,7 +85,7 @@ func NewController(
 		filterKind:        env.Filter_Kind,
 	}
 
-	impl := controller.NewImpl(r, r.Logger, "RedisReplay", reconciler.MustNewStatsReporter("RedisReplay", r.Logger))
+	impl := controller.NewImpl(r, r.Logger, "RedisReplay", RedisReplayReconciler.MustNewStatsReporter("RedisReplay", r.Logger))
 
 	r.Logger.Info("Setting up event handlers")
 
@@ -115,73 +125,10 @@ func NewController(
 	return impl
 }
 
-// Reconciler implements controller.Reconciler for RedisReplay resources.
-type Reconciler struct {
-	// kubeClientSet allows us to talk to the k8s for core APIs
-	kubeClientSet kubernetes.Interface
-
-	// redisReplayLister index properties about RedisReplay
-	redisReplayLister listers.RedisReplayLister
-
-	// redisReplayClient allows us to configure RedisReplay objects
-	redisReplayClient redisreplayclientset.Interface
-
-	// secretLister index properties about Secret
-	secretLister listers.SecretLister
-
-	// deploymentLister index properties about Deployment
-	deploymentLister listers.DeploymentLister
-
-	// serviceLister index properties about Service
-	serviceLister listers.ServiceLister
-
-	// endpointsLister index properties about Endpoints
-	endpointsLister listers.EndpointsLister
-
-	// roleBindingLister index properties about RoleBinding
-	roleBindingLister listers.RoleBindingLister
-
-	// serviceAccountLister index properties about ServiceAccount
-	serviceAccount listers.ServiceAccountLister
-
-	// sinkURI is the URI messages will be forwarded on to.
-	sink string
-
-	// redisReplayImage is the image used to run the RedisReplay
-	redisReplayImage string
-
-	// redisAddress is the address of the Redis server
-	redisAddress string
-
-	// redisUser is the username to connect to the Redis server
-	redisUser string
-
-	// redisPassword is the password to connect to the Redis server
-	redisPassword string
-
-	// redisDatabase is the database to connect to the Redis server
-	redisDatabase string
-
-	// startTime is the start time of the RedisReplay
-	startTime string
-
-	// endTime is the end time of the RedisReplay
-	endTime string
-
-	// filter is the filter used to filter the RedisReplay
-	filter string
-
-	// filterKind is the filter kind used to filter the RedisReplay
-	filterKind string
-
-	// logger for logging
-	logger *zap.SugaredLogger
-}
-
 // Reconcile compares the actual state with the desired, and attempts to
 // converge the two. It then updates the Status block of the RedisReplay resource
 // with the current status of the resource.
-func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
+func (r *RedisReplayReconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -221,7 +168,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, key string) error {
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcile(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *RedisReplayReconciler) reconcile(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -246,7 +193,7 @@ func (r *Reconciler) reconcile(ctx context.Context, rr *v1alpha1.RedisReplay) er
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -271,7 +218,7 @@ func (r *Reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.Redi
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -296,7 +243,7 @@ func (r *Reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.Redi
 	return reconcileErr
 }
 
-func (r *Reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.

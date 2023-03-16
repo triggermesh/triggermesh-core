@@ -31,17 +31,21 @@ var (
 	// Make sure this is a kubernetes object.
 	_ runtime.Object = (*RedisReplay)(nil)
 	// Check that the type confroms to duck Knative Resource shape.
-	_ duckv1.KRShaped = (*RedisReplay)(nil)
+	// _ duckv1.KRShaped = (*RedisReplay)(nil)
 )
 
 type RedisReplaySpec struct {
 	// Redis connection information.
-	Redis      RedisConnection     `json:"redis"`
-	Sink       *duckv1.Destination `json:"sink"`
-	StartTime  string              `json:"startTime"`
-	EndTime    string              `json:"endTime"`
-	Filter     string              `json:"filter"`
-	FilterKind string              `json:"filterKind"`
+	Redis RedisConnection     `json:"redis"`
+	Sink  *duckv1.Destination `json:"sink"`
+	// +optional
+	StartTime *string `json:"startTime,omitempty"`
+	// +optional
+	EndTime *string `json:"endTime,omitempty"`
+	// +optional
+	Filter *string `json:"filter,omitempty"`
+	// +optional
+	FilterKind *string `json:"filterKind,omitempty"`
 }
 
 type RedisReplayStatus struct {
