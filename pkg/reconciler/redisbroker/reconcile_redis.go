@@ -83,8 +83,8 @@ func buildRedisDeployment(rb *eventingv1alpha1.RedisBroker, image string) *appsv
 				resources.PodSpecAddContainer(
 					resources.NewContainer("redis", image,
 						resources.ContainerAddEnvFromValue("REDIS_ARGS", "--appendonly yes"),
-						resources.ContainerAddPort("redis", 6379)))))))
-					}
+						resources.ContainerAddPort("redis", 6379))))))
+}
 
 func (r *redisReconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, error) {
 	desired := buildRedisDeployment(rb, r.image)

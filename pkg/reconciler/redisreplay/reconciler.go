@@ -9,25 +9,61 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
 
 	"knative.dev/pkg/logging"
 	knreconciler "knative.dev/pkg/reconciler"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	"github.com/triggermesh/triggermesh-core/pkg/client/generated/clientset/internalclientset"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
 )
 
 type reconciler struct {
-	secretReconciler common.SecretReconciler
-	saReconciler     common.ServiceAccountReconciler
-	startTime        string
-	endTime          string
-	filterKind       string
-	filter           string
-	sink             string
-	image            string
+	deploymentLister appsv1listers.DeploymentLister
+
+	redisAddress  string
+	redisUser     string
+	redisPassword string
+	redisDatabase string
+	startTime     string
+	endTime       string
+	filterKind    string
+	filter        string
+	sink          string
+	image         string
+}
+
+// reconcilerImpl implements controller.Reconciler for v1alpha1.RedisBroker resources.
+type reconcilerImpl struct {
+	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
+	reconciler.LeaderAwareFuncs
+
+	// Client is used to write back status updates.
+	Client internalclientset.Interface
+
+	// Listers index properties about resources.
+	Lister eventingv1alpha1.RedisReplayLister
+
+	// Recorder is an event recorder for recording Event resources to the
+	// Kubernetes API.
+	Recorder record.EventRecorder
+
+	// configStore allows for decorating a context with config maps.
+	// +optional
+	configStore reconciler.ConfigStore
+
+	// reconciler is the implementation of the business logic of the resource.
+	reconciler Interface
+
+	// finalizerName is the name of the finalizer to reconcile.
+	finalizerName string
+
+	// skipStatusUpdates configures whether or not this reconciler automatically updates
+	// the status of the reconciled resource.
+	skipStatusUpdates bool
 }
 
 // options that set the required environment variables for the RedisReplay.
@@ -75,16 +111,16 @@ func (r *reconciler) Reconcile(ctx context.Context, rr *eventingv1alpha1.RedisRe
 }
 
 func buildRedisReplayDeployment(rr *eventingv1alpha1.RedisReplay, image string) *appsv1.Deployment {
-	return resources.NewDeployment(rr.Namespace, rr.Name+"-"+redisResourceSuffix,
+	return resources.NewDeployment(rr.Namespace, rr.Name),
 		resources.DeploymentWithMetaOptions(
 			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
 			resources.MetaAddLabel(resources.AppComponentLabel, "redis-replay-deployment"),
 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
-			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
-			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
+			resources.MetaAddLabel(resources.AppInstanceLabel, rr.Name),
+			resources.MetaAddOwner(rr, rr.GetGroupVersionKind())),
 		resources.DeploymentAddSelectorForTemplate(resources.AppComponentLabel, "redis-replay-deployment"),
-		resources.DeploymentAddSelectorForTemplate(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
+		resources.DeploymentAddSelectorForTemplate(resources.AppInstanceLabel, rr.Name),
 		resources.DeploymentSetReplicas(1),
 		resources.DeploymentWithTemplateSpecOptions(
 			resources.PodTemplateSpecWithMetaOptions(
@@ -102,7 +138,20 @@ func buildRedisReplayDeployment(rr *eventingv1alpha1.RedisReplay, image string) 
 						resources.ContainerAddEnvFromValue("FILTER_KIND", *rr.Spec.FilterKind),
 						resources.ContainerAddEnvFromValue("FILTER", *rr.Spec.Filter),
 						resources.ContainerAddEnvFromValue("SINK", rr.Spec.Sink))))),
-	)
+		resources.DeploymentAddVolumeMounts(
+			resources.VolumeMountAdd("config-logging", "/etc/config-logging", false),
+			resources.VolumeMountAdd("config-observability", "/etc/config-observability", false)),
+		resources.DeploymentAddVolumes(
+			resources.VolumeAddConfigMap("config-logging", "config-logging"),
+			resources.VolumeAddConfigMap("config-observability", "config-observability")),
+		resources.DeploymentAddContainerPorts(
+			resources.ContainerPortAdd("metrics", 9090)),
+		resources.DeploymentAddContainerPorts(
+			resources.ContainerPortAdd("profiling", 8008)),
+		resources.DeploymentAddContainerPorts(
+			resources.ContainerPortAdd("health", 8081)),
+		resources.DeploymentAddContainerPorts(
+			resources.ContainerPortAdd("pprof", 8080))
 }
 
 func (r *reconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, error) {

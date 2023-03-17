@@ -5,24 +5,27 @@ package redisreplay
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	appsv1listers "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/tools/cache"
 
-	kubeclient "knative.dev/pkg/client/injection/kube/client"
+	corev1 "k8s.io/api/core/v1"
+	corev1listers "k8s.io/client-go/listers/core/v1"
+
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
-	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
-	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
-	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
 	"github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
+	"github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/client"
+	"github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
 	rrinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
 )
 
@@ -56,68 +59,37 @@ func NewController(
 	}
 
 	rrInformer := rrinformer.Get(ctx)
-	secretInformer := secret.Get(ctx)
+	// secretInformer := secret.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
-	serviceInformer := service.Get(ctx)
-	endpointsInformer := endpointsinformer.Get(ctx)
-	rolebindingInformer := rolebindingsinformer.Get(ctx)
-	serviceaccountInformer := serviceaccount.Get(ctx)
-
-	r := &RedisReplayReconciler{
-		kubeClientSet:     kubeclient.Get(ctx),
-		redisReplayLister: rrInformer.Lister(),
+	// serviceInformer := service.Get(ctx)
+	// endpointsInformer := endpointsinformer.Get(ctx)
+	// rolebindingInformer := rolebindingsinformer.Get(ctx)
+	// serviceaccountInformer := serviceaccount.Get(ctx)
+	r := &reconciler{
 		// redisReplayClient: redisreplayclient.Get(ctx),
-		secretLister:      secretInformer.Lister(),
-		deploymentLister:  deploymentInformer.Lister(),
-		serviceLister:     serviceInformer.Lister(),
-		endpointsLister:   endpointsInformer.Lister(),
-		roleBindingLister: rolebindingInformer.Lister(),
-		serviceAccount:    serviceaccountInformer.Lister(),
-		redisReplayImage:  env.RedisReplayImage,
-		sink:              env.Sink,
-		redisAddress:      env.RedisAddress,
-		redisUser:         env.RedisUser,
-		redisPassword:     env.RedisPassword,
-		redisDatabase:     env.RedisDatabase,
-		startTime:         env.StartTime,
-		endTime:           env.EndTime,
-		filter:            env.Filter,
-		filterKind:        env.Filter_Kind,
+		// secretLister:      secretInformer.Lister(),
+		// serviceLister:     serviceInformer.Lister(),
+		// endpointsLister:   endpointsInformer.Lister(),
+		// roleBindingLister: rolebindingInformer.Lister(),
+		// serviceAccount:    serviceaccountInformer.Lister(),
+		deploymentLister: deploymentInformer.Lister(),
+		image:            env.RedisReplayImage,
+		sink:             env.Sink,
+		redisAddress:     env.RedisAddress,
+		redisUser:        env.RedisUser,
+		redisPassword:    env.RedisPassword,
+		redisDatabase:    env.RedisDatabase,
+		startTime:        env.StartTime,
+		endTime:          env.EndTime,
+		filter:           env.Filter,
+		filterKind:       env.Filter_Kind,
 	}
 
-	impl := controller.NewImpl(r, r.Logger, "RedisReplay", RedisReplayReconciler.MustNewStatsReporter("RedisReplay", r.Logger))
-
-	r.Logger.Info("Setting up event handlers")
+	impl := reconciler.NewImpl(r)
 
 	rrInformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 
-	// Set up watches for RedisReplay resources
-	secretInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
 	deploymentInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	serviceInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	endpointsInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	rolebindingInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
-		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
-	})
-
-	serviceaccountInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: controller.FilterControllerGK(v1alpha1.Kind("RedisReplay")),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
@@ -125,10 +97,52 @@ func NewController(
 	return impl
 }
 
-// Reconcile compares the actual state with the desired, and attempts to
-// converge the two. It then updates the Status block of the RedisReplay resource
-// with the current status of the resource.
-func (r *RedisReplayReconciler) Reconcile(ctx context.Context, key string) error {
+func NewRedisReplayReconciler(
+	deploymentLister appsv1listers.DeploymentLister,
+	image string,
+	pullPolicy corev1.PullPolicy,
+	sink string,
+	redisAddress string,
+	redisUser string,
+	redisPassword string,
+	redisDatabase string,
+	startTime string,
+	endTime string,
+	filter string,
+	filterKind string,
+) *reconciler {
+	return &reconciler{
+		deploymentLister: deploymentLister,
+		image:            image,
+		pullPolicy:       pullPolicy,
+		sink:             sink,
+		redisAddress:     redisAddress,
+		redisUser:        redisUser,
+		redisPassword:    redisPassword,
+		redisDatabase:    redisDatabase,
+		startTime:        startTime,
+		endTime:          endTime,
+		filter:           filter,
+		filterKind:       filterKind,
+	}
+}
+
+func NewBrokerReconciler(ctx context.Context,
+	deploymentLister appsv1listers.DeploymentLister,
+	serviceLister corev1listers.ServiceLister,
+	endpointsLister corev1listers.EndpointsLister,
+	image string,
+	pullPolicy corev1.PullPolicy) reconciler {
+
+	return &reconciler{
+		client:           k8sclient.Get(ctx),
+		deploymentLister: deploymentLister,
+		image:            image,
+		pullPolicy:       pullPolicy,
+	}
+}
+
+func (r *rRreconciler) Reconcile(ctx context.Context, key string) error {
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -168,7 +182,7 @@ func (r *RedisReplayReconciler) Reconcile(ctx context.Context, key string) error
 	return reconcileErr
 }
 
-func (r *RedisReplayReconciler) reconcile(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *reconciler) reconcile(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -193,7 +207,7 @@ func (r *RedisReplayReconciler) reconcile(ctx context.Context, rr *v1alpha1.Redi
 	return reconcileErr
 }
 
-func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -218,7 +232,7 @@ func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1
 	return reconcileErr
 }
 
-func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -243,7 +257,7 @@ func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1
 	return reconcileErr
 }
 
-func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
+func (r *reconciler) reconcileRedisReplay(ctx context.Context, rr *v1alpha1.RedisReplay) error {
 	rr.Status.InitializeConditions()
 
 	// See if the source has been deleted.
@@ -266,4 +280,65 @@ func (r *RedisReplayReconciler) reconcileRedisReplay(ctx context.Context, rr *v1
 
 	// Requeue if the resource is not ready:
 	return reconcileErr
+}
+
+const (
+	defaultControllerAgentName = "redisreplay-controller"
+	defaultFinalizerName       = "redisreplay.eventing.triggermesh.io"
+)
+
+// NewImpl returns a controller.Impl that handles queuing and feeding work from
+// the queue through an implementation of controller.Reconciler, delegating to
+// the provided Interface and optional Finalizer methods. OptionsFn is used to return
+// controller.ControllerOptions to be used by the internal reconciler.
+func NewImpl(ctx context.Context, r Interface, logger *zap.SugaredLogger, name string, optsFns ...controller.OptionsFn) *controller.Impl {
+	logger := logging.FromContext(ctx)
+
+	// check the options function input. it should be 0 or 1.
+	if len(optsFns) > 1 {
+		logger.Fatal("Up to one options function is supported, found: ", len(optionsFns))
+	}
+
+	redisreplayInformer := redisreplay.Get(ctx)
+	redisreplayLister := redisreplayInformer.Lister()
+	var promoteFilterFunc func(obj interface{}) bool
+
+	rec := &reconcilerImpl{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+				all, err := redisreplayLister.List(labels.Everything())
+				if err != nil {
+					return err
+				}
+				for _, rr := range all {
+					if rr.Status.IsReady() {
+						enq(bkt, rr)
+					}
+				}
+				enq(bkt, types.NamespacedName{Name: "redisreplay-controller-leader"})
+				return nil
+			},
+			FilterFunc: func(obj interface{}) bool {
+				if promoteFilterFunc != nil {
+					return promoteFilterFunc(obj)
+				}
+				return true
+			},
+		},
+		reconciler: r,
+		Client:     client.Get(ctx),
+	}
+
+	ctrType := reflect.TypeOf(r).Elem()
+	ctrTypeName := fmt.Sprintf("%s.%s", ctrType.PkgPath(), ctrType.Name())
+	ctrTypeName = strings.ReplaceAll(ctrTypeName, "/", ".")
+
+	logger = logger.With(
+		zap.String(logkey.ControllerType, ctrTypeName),
+		zap.String(logkey.Kind, "eventing.triggermesh.io.redisreplay"),
+	)
+
+	impl := controller.NewContext(ctx, rec, controller.ControllerOptions{WorkQueueName: ctrTypeName, Logger: logger})
+	agentName := defaultControllerAgentName
+
 }

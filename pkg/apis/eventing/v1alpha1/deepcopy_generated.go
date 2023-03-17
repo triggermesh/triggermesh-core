@@ -427,6 +427,26 @@ func (in *RedisReplaySpec) DeepCopyInto(out *RedisReplaySpec) {
 		*out = new(v1.Destination)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.StartTime != nil {
+		in, out := &in.StartTime, &out.StartTime
+		*out = new(string)
+		**out = **in
+	}
+	if in.EndTime != nil {
+		in, out := &in.EndTime, &out.EndTime
+		*out = new(string)
+		**out = **in
+	}
+	if in.Filter != nil {
+		in, out := &in.Filter, &out.Filter
+		*out = new(string)
+		**out = **in
+	}
+	if in.FilterKind != nil {
+		in, out := &in.FilterKind, &out.FilterKind
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
