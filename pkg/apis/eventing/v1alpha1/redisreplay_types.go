@@ -4,6 +4,7 @@
 package v1alpha1
 
 import (
+	broker "github.com/triggermesh/brokers/pkg/config/broker"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -36,20 +37,24 @@ var (
 
 type RedisReplaySpec struct {
 	// Redis connection information.
-	Redis RedisConnection     `json:"redis"`
-	Sink  *duckv1.Destination `json:"sink"`
+	Broker BrokerInfo `json:"broker"`
 	// +optional
 	StartTime *string `json:"startTime,omitempty"`
 	// +optional
 	EndTime *string `json:"endTime,omitempty"`
 	// +optional
-	Filter *string `json:"filter,omitempty"`
-	// +optional
-	FilterKind *string `json:"filterKind,omitempty"`
+	Filters []broker.Filter     `json:"filters,omitempty"`
+	Target  *duckv1.Destination `json:"target"`
 }
 
 type RedisReplayStatus struct {
 	duckv1.Status `json:",inline"`
+}
+
+type BrokerInfo struct {
+	Group string `json:"group"`
+	Kind  string `json:"kind"`
+	Name  string `json:"name"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
