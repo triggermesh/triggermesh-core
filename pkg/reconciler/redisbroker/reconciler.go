@@ -84,12 +84,22 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 					rb.Spec.Redis.Connection.Password.SecretKeyRef.Key)(c)
 			}
 
+			if rb.Spec.Redis.Connection.CACertificate != nil {
+				resources.ContainerAddEnvVarFromSecret("REDIS_CA_CERTIFICATE",
+					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Name,
+					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Key)(c)
+			}
+
 			if rb.Spec.Redis.Connection.TLSEnabled != nil && *rb.Spec.Redis.Connection.TLSEnabled {
 				resources.ContainerAddEnvFromValue("REDIS_TLS_ENABLED", "true")(c)
 			}
 
 			if rb.Spec.Redis.Connection.TLSSkipVerify != nil && *rb.Spec.Redis.Connection.TLSSkipVerify {
-				resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", "true")(c)
+				tlsSkipVerifyDefault := "true"
+				if rb.Spec.Redis.Connection.CACertificate != nil {
+					tlsSkipVerifyDefault = "false"
+				}
+				resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", tlsSkipVerifyDefault)(c)
 			}
 
 		} else {

@@ -333,6 +333,11 @@ func (in *RedisConnection) DeepCopyInto(out *RedisConnection) {
 		*out = new(SecretValueFromSource)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.CACertificate != nil {
+		in, out := &in.CACertificate, &out.CACertificate
+		*out = new(SecretValueFromSource)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.TLSEnabled != nil {
 		in, out := &in.TLSEnabled, &out.TLSEnabled
 		*out = new(bool)
