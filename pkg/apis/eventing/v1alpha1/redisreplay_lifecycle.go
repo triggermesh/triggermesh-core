@@ -4,8 +4,6 @@
 package v1alpha1
 
 import (
-	"sync"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
@@ -14,27 +12,10 @@ import (
 // RedisReplayReplay refers to the RedisReplay instance backing the replay adapter.
 
 const (
-	RedisReplayConditionReady                                          = apis.ConditionReady
-	RedisReplayReplayDeployment                     apis.ConditionType = "ReplayDeploymentReady"
-	RedisReplayReplayServiceAccount                 apis.ConditionType = "ReplayServiceAccountReady"
-	RedisReplayReplayRoleBinding                    apis.ConditionType = "RedisReplayReplayRoleBinding"
-	RedisReplayReplayService                        apis.ConditionType = "ReplayServiceReady"
-	RedisReplayReplayServiceEndpointsConditionReady apis.ConditionType = "ReplayEndpointsReady"
-	RedisReplayConfigSecret                         apis.ConditionType = "ReplayConfigSecretReady"
-	RedisReplayConditionAddressable                 apis.ConditionType = "Addressable"
+	RedisReplayConditionReady = apis.ConditionReady
 )
 
-var redisReplayCondSet = apis.NewLivingConditionSet(
-	RedisReplayReplayServiceAccount,
-	RedisReplayReplayRoleBinding,
-	RedisReplayReplayDeployment,
-	RedisReplayReplayService,
-	RedisReplayReplayServiceEndpointsConditionReady,
-	RedisReplayConfigSecret,
-	RedisReplayConditionAddressable,
-)
-
-var redisReplayCondSetLock = sync.RWMutex{}
+var redisReplayCondSet = apis.NewLivingConditionSet()
 
 // GetGroupVersionKind returns GroupVersionKind for Brokers
 func (t *RedisReplay) GetGroupVersionKind() schema.GroupVersionKind {
@@ -47,7 +28,7 @@ func (t *RedisReplay) GetStatus() *duckv1.Status {
 }
 
 // GetConditionSet retrieves the condition set for this resource. Implements the KRShaped interface.
-func (*RedisReplayStatus) GetConditionSet() apis.ConditionSet {
+func (*RedisReplay) GetConditionSet() apis.ConditionSet {
 	return redisReplayCondSet
 }
 
@@ -71,38 +52,11 @@ func (s *RedisReplayStatus) InitializeConditions() {
 	s.GetConditionSet().Manage(s).InitializeConditions()
 }
 
-// MarkReplayServiceAccountFailed changes the "ReplayServiceAccountReady" condition to false to reflect that the
-// Replay ServiceAccount failed to be created.
-func (s *RedisReplayStatus) MarkReplayServiceAccountFailed(reason, messageFormat string, messageA ...interface{}) {
-	redisReplayCondSet.Manage(s).MarkFalse(RedisReplayReplayServiceAccount, reason, messageFormat, messageA...)
+func (*RedisReplayStatus) GetConditionSet() apis.ConditionSet {
+	return redisReplayCondSet
 }
 
-// MarkReplayServiceAccountReady changes the "ReplayServiceAccountReady" condition to true to reflect that the
-// Replay ServiceAccount was created successfully.
-func (s *RedisReplayStatus) MarkReplayServiceAccountReady() {
-	redisReplayCondSet.Manage(s).MarkTrue(RedisReplayReplayServiceAccount)
-}
-
-// MarkReplayRoleBindingFailed changes the "ReplayRoleBindingReady" condition to false to reflect that the
-// Replay RoleBinding failed to be created.
-func (s *RedisReplayStatus) MarkReplayRoleBindingFailed(reason, messageFormat string, messageA ...interface{}) {
-	redisReplayCondSet.Manage(s).MarkFalse(RedisReplayReplayRoleBinding, reason, messageFormat, messageA...)
-}
-
-// MarkReplayRoleBindingReady changes the "ReplayRoleBindingReady" condition to true to reflect that the
-// Replay RoleBinding was created successfully.
-func (s *RedisReplayStatus) MarkReplayRoleBindingReady() {
-	redisReplayCondSet.Manage(s).MarkTrue(RedisReplayReplayRoleBinding)
-}
-
-// MarkReplayDeploymentFailed changes the "ReplayDeploymentReady" condition to false to reflect that the
-// Replay Deployment failed to be created.
-func (s *RedisReplayStatus) MarkReplayDeploymentFailed(reason, messageFormat string, messageA ...interface{}) {
-	redisReplayCondSet.Manage(s).MarkFalse(RedisReplayReplayDeployment, reason, messageFormat, messageA...)
-}
-
-// MarkReplayDeploymentReady changes the "ReplayDeploymentReady" condition to true to reflect that the
-// Replay Deployment was created successfully.
-func (s *RedisReplayStatus) MarkReplayDeploymentReady() {
-	redisReplayCondSet.Manage(s).MarkTrue(RedisReplayReplayDeployment)
-}
+// // InitializeConditions sets relevant unset conditions to Unknown state.
+// func (s *RedisReplay) GetConditions() apis.Conditions {
+// 	return s.Status.Conditions
+// }

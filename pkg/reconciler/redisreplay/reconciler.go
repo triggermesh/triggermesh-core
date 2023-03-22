@@ -1,268 +1,104 @@
-// Copyright 2023 TriggerMesh Inc.
+// Copyright 2022 TriggerMesh Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package redisreplay
 
 import (
 	"context"
+	"fmt"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	appsv1listers "k8s.io/client-go/listers/apps/v1"
-
+	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
-	knreconciler "knative.dev/pkg/reconciler"
+	pkgreconciler "knative.dev/pkg/reconciler"
+	"knative.dev/pkg/resolver"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
-	"github.com/triggermesh/triggermesh-core/pkg/client/generated/clientset/internalclientset"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler/resources"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler/semantic"
+	eventingv1alpha1listers "github.com/triggermesh/triggermesh-core/pkg/client/generated/listers/eventing/v1alpha1"
 )
 
 type reconciler struct {
-	deploymentLister appsv1listers.DeploymentLister
-
-	redisAddress  string
-	redisUser     string
-	redisPassword string
-	redisDatabase string
-	startTime     string
-	endTime       string
-	filterKind    string
-	filter        string
-	sink          string
-	image         string
+	// TODO duck brokers
+	rrLister    eventingv1alpha1listers.RedisReplayLister
+	uriResolver *resolver.URIResolver
 }
 
-// reconcilerImpl implements controller.Reconciler for v1alpha1.RedisBroker resources.
-type reconcilerImpl struct {
-	// LeaderAwareFuncs is inlined to help us implement reconciler.LeaderAware.
-	reconciler.LeaderAwareFuncs
+func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.RedisReplay) pkgreconciler.Event {
+	log := logging.FromContext(ctx)
+	log.Info("Reconciling")
+	// err := r.resolveBroker(ctx, t)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Client is used to write back status updates.
-	Client internalclientset.Interface
+	// err = r.resolveTarget(ctx, t)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// Listers index properties about resources.
-	Lister eventingv1alpha1.RedisReplayLister
-
-	// Recorder is an event recorder for recording Event resources to the
-	// Kubernetes API.
-	Recorder record.EventRecorder
-
-	// configStore allows for decorating a context with config maps.
-	// +optional
-	configStore reconciler.ConfigStore
-
-	// reconciler is the implementation of the business logic of the resource.
-	reconciler Interface
-
-	// finalizerName is the name of the finalizer to reconcile.
-	finalizerName string
-
-	// skipStatusUpdates configures whether or not this reconciler automatically updates
-	// the status of the reconciled resource.
-	skipStatusUpdates bool
+	return nil
 }
 
-// options that set the required environment variables for the RedisReplay.
-func redisDeploymentOption(rr *eventingv1alpha1.RedisReplay, redisSvc *corev1.Service) resources.DeploymentOption {
-	return func(d *appsv1.Deployment) {
-		c := &d.Spec.Template.Spec.Containers[0]
-
-		if rr.Spec.EndTime != nil {
-			resources.ContainerAddEnvFromValue("END_TIME", *rr.Spec.EndTime)(c)
-		}
-
-		if rr.Spec.StartTime != nil {
-			resources.ContainerAddEnvFromValue("START_TIME", rr.Spec.StartTime.String())(c)
-		}
-
-		if rr.Spec.FilterKind != nil {
-			resources.ContainerAddEnvFromValue("FILTER_KIND", *rr.Spec.FilterKind)(c)
-		}
-
-		if rr.Spec.Filter != nil {
-			resources.ContainerAddEnvFromValue("FILTER", *rr.Spec.Filter)(c)
-		}
-
-		resources.ContainerAddEnvFromValue("SINK", *rr.Spec.Sink)(c)
-		resources.ContainerAddEnvFromValue("REDIS_ADDRESS", redisSvc.Name+"."+redisSvc.Namespace+".svc.cluster.local:6379")(c)
-	}
-}
-
-// ReconcileKind implements Interface.ReconcileKind.
-func (r *reconciler) ReconcileKind(ctx context.Context, rr *eventingv1alpha1.RedisReplay) knreconciler.Event {
-	logging.FromContext(ctx).Info("Reconciling", "kind", "RedisReplay")
-	d, err := r.reconcileDeployment(ctx, rb, sa, secret, deploymentOptions)
-	if err != nil {
-		return nil, nil, err
-	}
-}
-
-// Reconcile implements Interface.Reconcile.
-func (r *reconciler) Reconcile(ctx context.Context, rr *eventingv1alpha1.RedisReplay) (*appsv1.Deployment, error) {
-	d, err := r.reconcileDeployment(ctx, rr)
-	if err != nil {
-		return nil, err
-	}
-	return d, nil
-}
-
-func buildRedisReplayDeployment(rr *eventingv1alpha1.RedisReplay, image string) *appsv1.Deployment {
-	return resources.NewDeployment(rr.Namespace, rr.Name),
-		resources.DeploymentWithMetaOptions(
-			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
-			resources.MetaAddLabel(resources.AppComponentLabel, "redis-replay-deployment"),
-			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
-			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
-			resources.MetaAddLabel(resources.AppInstanceLabel, rr.Name),
-			resources.MetaAddOwner(rr, rr.GetGroupVersionKind())),
-		resources.DeploymentAddSelectorForTemplate(resources.AppComponentLabel, "redis-replay-deployment"),
-		resources.DeploymentAddSelectorForTemplate(resources.AppInstanceLabel, rr.Name),
-		resources.DeploymentSetReplicas(1),
-		resources.DeploymentWithTemplateSpecOptions(
-			resources.PodTemplateSpecWithMetaOptions(
-				resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
-				resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
-			),
-			resources.PodTemplateSpecWithPodSpecOptions(
-				resources.PodSpecAddContainer(
-					resources.NewContainer("redisreplay", image,
-						resources.ContainerAddEnvFromValue("REDIS_ADDRESS", *rr.Spec.Redis.URL),
-						// resources.ContainerAddEnvFromValue("REDIS_PASSWORD", rr.Spec.Redis.Password),
-						// resources.ContainerAddEnvFromValue("REDIS_USER", rr.Spec.Redis.User),
-						resources.ContainerAddEnvFromValue("START_TIME", *rr.Spec.StartTime),
-						resources.ContainerAddEnvFromValue("END_TIME", *rr.Spec.EndTime),
-						resources.ContainerAddEnvFromValue("FILTER_KIND", *rr.Spec.FilterKind),
-						resources.ContainerAddEnvFromValue("FILTER", *rr.Spec.Filter),
-						resources.ContainerAddEnvFromValue("SINK", rr.Spec.Sink))))),
-		resources.DeploymentAddVolumeMounts(
-			resources.VolumeMountAdd("config-logging", "/etc/config-logging", false),
-			resources.VolumeMountAdd("config-observability", "/etc/config-observability", false)),
-		resources.DeploymentAddVolumes(
-			resources.VolumeAddConfigMap("config-logging", "config-logging"),
-			resources.VolumeAddConfigMap("config-observability", "config-observability")),
-		resources.DeploymentAddContainerPorts(
-			resources.ContainerPortAdd("metrics", 9090)),
-		resources.DeploymentAddContainerPorts(
-			resources.ContainerPortAdd("profiling", 8008)),
-		resources.DeploymentAddContainerPorts(
-			resources.ContainerPortAdd("health", 8081)),
-		resources.DeploymentAddContainerPorts(
-			resources.ContainerPortAdd("pprof", 8080))
-}
-
-func (r *reconciler) reconcileDeployment(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*appsv1.Deployment, error) {
-	desired := buildRedisDeployment(rb, r.image)
-	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
+func (r *reconciler) resolveBroker(ctx context.Context, t *eventingv1alpha1.RedisReplay) pkgreconciler.Event {
+	// TODO duck
+	// TODO move to webhook
 	switch {
-	case err == nil:
-		// Compare current object with desired, update if needed.
-		if !semantic.Semantic.DeepEqual(desired, current) {
-			desired.Status = current.Status
-			desired.ResourceVersion = current.ResourceVersion
-
-			current, err = r.client.AppsV1().Deployments(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-			if err != nil {
-				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-				logging.FromContext(ctx).Error("Unable to update the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-				rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentUpdate, "Failed to update Redis deployment")
-
-				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentUpdate,
-					"Failed to get Redis deployment %s: %w", fullname, err)
-			}
-		}
-
-	case !apierrs.IsNotFound(err):
-		// An error occurred retrieving current deployment.
-		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-		logging.FromContext(ctx).Error("Unable to get the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-		rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentGet, "Failed to get Redis deployment")
-
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentGet,
-			"Failed to get Redis deployment %s: %w", fullname, err)
-
-	default:
-		// The deployment has not been found, create it.
-		current, err = r.client.AppsV1().Deployments(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
-		if err != nil {
-			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-			logging.FromContext(ctx).Error("Unable to create the deployment", zap.String("deployment", fullname.String()), zap.Error(err))
-			rb.Status.MarkRedisDeploymentFailed(common.ReasonFailedDeploymentCreate, "Failed to create Redis deployment")
-
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedDeploymentCreate,
-				"Failed to create Redis deployment %s: %w", fullname, err)
-		}
+	case t.Spec.Broker.Group == "":
+		t.Spec.Broker.Group = eventingv1alpha1.SchemeGroupVersion.Group
+	case t.Spec.Broker.Group != eventingv1alpha1.SchemeGroupVersion.Group:
+		return controller.NewPermanentError(fmt.Errorf("not supported Broker Group %q", t.Spec.Broker.Group))
 	}
 
-	// Update status based on deployment
-	rb.Status.PropagateRedisDeploymentAvailability(ctx, &current.Status)
+	// var rb *eventingv1alpha1.RedisBroker
+	// if t.Spec.Broker.Kind == rb.GetGroupVersionKind().Kind {
+	// 	return r.resolveRedisBroker(ctx, t)
+	// }
 
-	return current, nil
+	return controller.NewPermanentError(fmt.Errorf("not supported Broker Kind %q", t.Spec.Broker.Kind))
 }
 
-// func buildRedisReplayService(rrp eventingv1alpha1.RedisReplay) *corev1.Service {
-// 	return resources.NewService(rrp.Namespace, rrp.Name+"-"+redisResourceSuffix,
-// 		resources.ServiceWithMetaOptions(
-// 			resources.MetaAddLabel(resources.AppNameLabel, common.AppAnnotationValue(rb)),
-// 			resources.MetaAddLabel(resources.AppComponentLabel, "redis-replay-service"),
-// 			resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
-// 			resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
-// 			resources.MetaAddLabel(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
-// 			resources.MetaAddOwner(rb, rb.GetGroupVersionKind())),
-// 		resources.ServiceAddSelectorForService(resources.AppComponentLabel, "redis-replay-service"),
-// 		resources.ServiceAddSelectorForService(resources.AppInstanceLabel, rb.Name+"-"+redisResourceSuffix),
-// 		resources.ServiceAddPort("http", 8080, 8080),
-// 	)
-// }
-
-// func (r *reconciler) reconcileService(ctx context.Context, rb *eventingv1alpha1.RedisBroker) (*corev1.Service, error) {
-// 	desired := buildRedisService(rb)
-// 	current, err := r.serviceLister.Services(desired.Namespace).Get(desired.Name)
-// 	switch {
-// 	case err == nil:
-// 		// Compare current object with desired, update if needed.
-// 		if !semantic.Semantic.DeepEqual(desired, current) {
-// 			desired.Status = current.Status
-// 			desired.ResourceVersion = current.ResourceVersion
-
-// 			current, err = r.client.CoreV1().Services(desired.Namespace).Update(ctx, desired, metav1.UpdateOptions{})
-// 			if err != nil {
-// 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-// 				logging.FromContext(ctx).Error("Unable to update the service", zap.String("service", fullname.String()), zap.Error(err))
-// 				rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceUpdate, "Failed to update RedisReplay service")
-
-// 				return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceUpdate,
-// 					"Failed to get Redis service %s: %w", fullname, err)
-// 			}
+// func (r *reconciler) resolveRedisBroker(ctx context.Context, t *eventingv1alpha1.Trigger) pkgreconciler.Event {
+// 	rb, err := r.rrLister.RedisReplays(t.Namespace).Get(t.Spec.Broker.Name)
+// 	if err != nil {
+// 		if apierrs.IsNotFound(err) {
+// 			logging.FromContext(ctx).Errorw(fmt.Sprintf("Trigger %s/%s references non existing broker %q", t.Namespace, t.Name, t.Spec.Broker.Name))
+// 			t.Status.MarkBrokerFailed(common.ReasonBrokerDoesNotExist, "Broker %q does not exist", t.Spec.Broker.Name)
+// 			// No need to requeue, we will be notified when if broker is created.
+// 			return controller.NewPermanentError(err)
 // 		}
 
-// 	case !apierrs.IsNotFound(err):
-// 		// An error occurred retrieving current service.
-// 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-// 		logging.FromContext(ctx).Error("Unable to get the service", zap.String("service", fullname.String()), zap.Error(err))
-// 		rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceGet, "Failed to get RedisReplay service")
-
-// 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceGet,
-// 			"Failed to get RedisReplay service %s: %w", fullname, err)
-
-// 	default:
-// 		// The service has not been found, create it.
-// 		current, err = r.client.CoreV1().Services(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
-// 		if err != nil {
-// 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
-// 			logging.FromContext(ctx).Error("Unable to create the service", zap.String("service", fullname.String()), zap.Error(err))
-// 			rb.Status.MarkRedisServiceFailed(common.ReasonFailedServiceCreate, "Failed to create RedisReplay service")
-
-// 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedServiceCreate,
-// 				"Failed to create RedisReplay service %s: %w", fullname, err)
-// 		}
+// 		t.Status.MarkBrokerFailed(common.ReasonFailedBrokerGet, "Failed to get broker %q : %s", t.Spec.Broker, err)
+// 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedBrokerGet,
+// 			"Failed to get broker for trigger %s/%s: %w", t.Namespace, t.Name, err)
 // 	}
 
-// 	// Update status based on service
-// 	rb.Status.PropagateRedisServiceAvailability(ctx, &current.Status)
+// 	t.Status.PropagateBrokerCondition(rb.Status.GetTopLevelCondition())
 
-// 	return current, nil
+// 	// No need to requeue, we'll get requeued when broker changes status.
+// 	if !rb.IsReady() {
+// 		logging.FromContext(ctx).Errorw(fmt.Sprintf("Trigger %s/%s references non ready broker %q", t.Namespace, t.Name, t.Spec.Broker.Name))
+// 	}
+
+// 	return nil
+// }
+
+// func (r *reconciler) resolveTarget(ctx context.Context, t *eventingv1alpha1.RedisReplay) pkgreconciler.Event {
+// 	if t.Spec.Target.Ref != nil && t.Spec.Target.Ref.Namespace == "" {
+// 		// To call URIFromDestinationV1(ctx context.Context, dest v1.Destination, parent interface{}), dest.Ref must have a Namespace
+// 		// If Target.Ref.Namespace is nil, We will use the Namespace of Trigger as the Namespace of dest.Ref
+// 		t.Spec.Target.Ref.Namespace = t.Namespace
+// 	}
+
+// 	targetURI, err := r.uriResolver.URIFromDestinationV1(ctx, t.Spec.Target, t)
+// 	if err != nil {
+// 		logging.FromContext(ctx).Errorw("Unable to get the target's URI", zap.Error(err))
+// 		t.Status.MarkTargetResolvedFailed("Unable to get the target's URI", "%v", err)
+// 		t.Status.TargetURI = nil
+// 		return pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedResolveReference,
+// 			"Failed to get target's URI: %w", err)
+// 	}
+
+// 	t.Status.TargetURI = targetURI
+// 	t.Status.MarkTargetResolvedSucceeded()
+
+// 	return nil
 // }

@@ -31,8 +31,8 @@ type RedisReplay struct {
 var (
 	// Make sure this is a kubernetes object.
 	_ runtime.Object = (*RedisReplay)(nil)
-	// Check that the type confroms to duck Knative Resource shape.
-	// _ duckv1.KRShaped = (*RedisReplay)(nil)
+	// Check that the type conforms to the duck Knative Resource shape.
+	_ duckv1.KRShaped = (*RedisReplay)(nil)
 )
 
 type RedisReplaySpec struct {
