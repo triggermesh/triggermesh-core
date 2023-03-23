@@ -40,7 +40,7 @@ metadata:
     app.kubernetes.io/part-of: triggermesh
 rules:
 - apiGroups:
-  - eveinting.triggermesh.io
+  - eventing.triggermesh.io
   resources: ["*"]
   verbs:
   - get
