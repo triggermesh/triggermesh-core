@@ -12,8 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
-func TestNewRoleBinding(t *testing.T){
+func TestNewRoleBinding(t *testing.T) {
 	crGVK := rbacv1.SchemeGroupVersion.WithKind("ClusterRole")
 	saGVK := corev1.SchemeGroupVersion.WithKind("ServiceAccount")
 
@@ -42,44 +41,42 @@ func TestNewRoleBinding(t *testing.T){
 					Namespace: tNamespace,
 					Name:      tServiceAccountName,
 				}},
-
 			}},
-			"with meta options": {
-				options: []RoleBindingOption{
-					RoleBindingWithMetaOptions(MetaAddLabel("key", "value")					),
+		"with meta options": {
+			options: []RoleBindingOption{
+				RoleBindingWithMetaOptions(MetaAddLabel("key", "value")),
+			},
+			expected: rbacv1.RoleBinding{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "RoleBinding",
+					APIVersion: rbacv1.SchemeGroupVersion.String(),
 				},
-				expected: rbacv1.RoleBinding{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "RoleBinding",
-						APIVersion: rbacv1.SchemeGroupVersion.String(),
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: tNamespace,
+					Name:      tRoleBindingName,
+					Labels: map[string]string{
+						"key": "value",
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: tNamespace,
-						Name:      tRoleBindingName,
-						Labels: map[string]string{
-							"key": "value",
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						APIGroup: crGVK.Group,
-						Kind:     crGVK.Kind,
-						Name:     tRoleName,
-					},
-					Subjects: []rbacv1.Subject{{
-						APIGroup:  saGVK.Group,
-						Kind:      saGVK.Kind,
-						Namespace: tNamespace,
-						Name:      tServiceAccountName,
-					}},
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: crGVK.Group,
+					Kind:     crGVK.Kind,
+					Name:     tRoleName,
+				},
+				Subjects: []rbacv1.Subject{{
+					APIGroup:  saGVK.Group,
+					Kind:      saGVK.Kind,
+					Namespace: tNamespace,
+					Name:      tServiceAccountName,
 				}},
-		}
+			}},
+	}
 
-
-		for name, tc := range testCases {
-			t.Run(name, func(t *testing.T) {
-				got := NewRoleBinding(tNamespace, tRoleBindingName, tRoleName, tServiceAccountName, tc.options...)
-				assert.Equal(t, &tc.expected, got)
-			})
-		}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := NewRoleBinding(tNamespace, tRoleBindingName, tRoleName, tServiceAccountName, tc.options...)
+			assert.Equal(t, &tc.expected, got)
+		})
+	}
 
 }

@@ -17,8 +17,8 @@ const (
 	tVolumeMountFile = "myfile"
 
 	tServiceAccountName = "test-sa-name"
-	tRoleName = "test-role-name"
-	tRoleBindingName = "test-rolebinding-name"
+	tRoleName           = "test-role-name"
+	tRoleBindingName    = "test-rolebinding-name"
 )
 
 var (
