@@ -11,9 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
-
-func TestNewServiceAccount(t *testing.T){
+func TestNewServiceAccount(t *testing.T) {
 	testCases := map[string]struct {
 		options  []ServiceAccountOption
 		expected corev1.ServiceAccount
@@ -29,30 +27,30 @@ func TestNewServiceAccount(t *testing.T){
 					Name:      tServiceAccountName,
 				},
 			}},
-			"with meta options": {
-				options: []ServiceAccountOption{
-					ServiceAccountWithMetaOptions(MetaAddLabel("key", "value")					),
+		"with meta options": {
+			options: []ServiceAccountOption{
+				ServiceAccountWithMetaOptions(MetaAddLabel("key", "value")),
+			},
+			expected: corev1.ServiceAccount{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ServiceAccount",
+					APIVersion: corev1.SchemeGroupVersion.String(),
 				},
-				expected: corev1.ServiceAccount{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       "ServiceAccount",
-						APIVersion: corev1.SchemeGroupVersion.String(),
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: tNamespace,
+					Name:      tServiceAccountName,
+					Labels: map[string]string{
+						"key": "value",
 					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: tNamespace,
-						Name:      tServiceAccountName,
-						Labels: map[string]string{
-							"key": "value",
-						},
-					},
-				}},
-		}
+				},
+			}},
+	}
 
-		for name, tc := range testCases {
-			t.Run(name, func(t *testing.T) {
-				got := NewServiceAccount(tNamespace, tServiceAccountName, tc.options...)
-				assert.Equal(t, &tc.expected, got)
-			})
-		}
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := NewServiceAccount(tNamespace, tServiceAccountName, tc.options...)
+			assert.Equal(t, &tc.expected, got)
+		})
+	}
 
 }

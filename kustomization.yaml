@@ -1,4 +1,4 @@
-# Copyright 2022 TriggerMesh Inc.
+# Copyright 2023 TriggerMesh Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,25 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.19 AS builder
-
-ENV CGO_ENABLED 0
-ENV GOOS linux
-ENV GOARCH amd64
-
-WORKDIR /go/src/project
-
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . .
-RUN go build -a -o triggermesh-core ./cmd/core-controller
-
-FROM gcr.io/distroless/static:nonroot
-
-COPY --from=builder /go/src/project/triggermesh-core /
-COPY LICENSE EULA.pdf /licenses/
-
-USER 65532:65532
-
-ENTRYPOINT ["/triggermesh-core"]
+resources:
+- config/200-clusterrole-namespaced.yaml
+- config/200-clusterroles.yaml
+- config/200-kn-clusterrole-addressable-resolvers.yaml
+- config/200-triggermesh-core-addressable-resolvers.yaml
+- config/201-serviceaccounts.yaml
+- config/202-clusterrolebindings.yaml
+- config/300-memorybroker.yaml
+- config/300-redisbroker.yaml
+- config/300-trigger.yaml
+- config/500-core-controller.yaml
