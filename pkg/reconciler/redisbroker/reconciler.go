@@ -85,7 +85,7 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 			}
 
 			if rb.Spec.Redis.Connection.CACertificate != nil {
-				resources.ContainerAddEnvVarFromSecret("REDIS_CA_CERTIFICATE",
+				resources.ContainerAddEnvVarFromSecret("REDIS_TLS_CA_CERTIFICATE",
 					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Name,
 					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Key)(c)
 			}
