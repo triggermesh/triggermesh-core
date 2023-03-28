@@ -87,11 +87,23 @@ spec:
                                 type: string
                               key:
                                 type: string
+                      caCertificate:
+                        description: Contains a CA Certificate used to connect to Redis.
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            description: A reference to a Kubernetes Secret object.
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
                       tlsEnabled:
                         description: Use TLS enctrypted Redis connection.
                         type: boolean
                       tlsSkipVerify:
-                        description: Skip TLS certificate verification.
+                        description: Skip TLS certificate verification. If caCertificate is set, tlsSkipVerify will default to false.
                         type: boolean
                     oneOf:
                     - required: [url]

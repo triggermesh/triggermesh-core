@@ -25,6 +25,10 @@ spec:
           secretKeyRef:
             name: <Kubernetes secret name>
             key: <Kubernetes secret key>
+        caCertificate: <CA certificate used to connect to redis. Optional>
+          secretKeyRef:
+            name: <Kubernetes secret name>
+            key: <Kubernetes secret key>
         tlsEnabled: <boolean that indicates if the Redis server is TLS protected. Optional, defaults to false>
         tlsSkipVerify: <boolean that skips verifying TLS certificates. Optional, defaults to false>
     stream: <Redis stream name. Optional, defaults to a combination of namespace and broker name>
