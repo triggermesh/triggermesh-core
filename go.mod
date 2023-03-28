@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.2
-	github.com/triggermesh/brokers v1.2.1-0.20230328083526-934d17bd5284
+	github.com/triggermesh/brokers v1.2.1
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
