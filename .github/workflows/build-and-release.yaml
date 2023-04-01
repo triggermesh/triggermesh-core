@@ -104,7 +104,7 @@ jobs:
     - name: Publish container images to GCR
       env:
         KO_DOCKER_REPO: gcr.io/triggermesh
-        KOFLAGS: --jobs=4 --platform=linux/amd64,linux/arm64,linux/ppc64le --push=false
+        KOFLAGS: --jobs=4 --platform=linux/amd64,linux/arm64,linux/ppc64le --push=${{ github.event_name != 'pull_request' }}
         DIST_DIR: ./releases/manifests
       run: |
         pushd hack/manifest-cleaner
