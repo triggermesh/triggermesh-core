@@ -73,7 +73,7 @@ spec:
         - name: REDISBROKER_BROKER_IMAGE
           value: gcr.io/triggermesh/redis-broker:latest
         - name: REDISBROKER_REPLAY_IMAGE
-          value: tmjeff/redisreplay:latest
+          value: tmjeff/redis-replay:latest
         # Pull policy for broker, REMOVE for production environments
         - name: IMAGE_PULL_POLICY
           value: Always

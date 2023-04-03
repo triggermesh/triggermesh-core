@@ -51,6 +51,18 @@ rules:
   - patch
 
 
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  - patch
 
 # Read reconciled TriggerMesh core resources and update their statuses
 # +rbac-check

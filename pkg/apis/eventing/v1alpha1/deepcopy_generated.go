@@ -438,6 +438,11 @@ func (in *RedisReplayList) DeepCopyObject() runtime.Object {
 func (in *RedisReplaySpec) DeepCopyInto(out *RedisReplaySpec) {
 	*out = *in
 	out.Broker = in.Broker
+	if in.Redis != nil {
+		in, out := &in.Redis, &out.Redis
+		*out = new(Redis)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.StartTime != nil {
 		in, out := &in.StartTime, &out.StartTime
 		*out = new(string)

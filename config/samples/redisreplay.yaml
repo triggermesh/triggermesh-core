@@ -1,6 +1,10 @@
+# kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-redis/broker.yaml
 apiVersion: eventing.triggermesh.io/v1alpha1
 kind: RedisReplay
 metadata:
   name: replay
 spec:
-  
+  broker:
+    apiVersion: eventing.triggermesh.io/v1alpha1
+    kind: RedisBroker
+    name: demo

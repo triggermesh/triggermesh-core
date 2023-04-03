@@ -37,6 +37,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&MemoryBrokerList{},
 		&RedisBroker{},
 		&RedisBrokerList{},
+		&RedisReplayList{},
+		&RedisReplay{},
 		&Trigger{},
 		&TriggerList{},
 	)

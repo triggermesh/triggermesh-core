@@ -38,6 +38,7 @@ var (
 type RedisReplaySpec struct {
 	// Redis connection information.
 	Broker BrokerInfo `json:"broker"`
+	Redis  *Redis     `json:"redis,omitempty"`
 	// +optional
 	StartTime *string `json:"startTime,omitempty"`
 	// +optional
