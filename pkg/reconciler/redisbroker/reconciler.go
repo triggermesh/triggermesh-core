@@ -84,10 +84,22 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 					rb.Spec.Redis.Connection.Password.SecretKeyRef.Key)(c)
 			}
 
-			if rb.Spec.Redis.Connection.CACertificate != nil {
+			if rb.Spec.Redis.Connection.TLSCACertificate != nil {
 				resources.ContainerAddEnvVarFromSecret("REDIS_TLS_CA_CERTIFICATE",
-					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Name,
-					rb.Spec.Redis.Connection.CACertificate.SecretKeyRef.Key)(c)
+					rb.Spec.Redis.Connection.TLSCACertificate.SecretKeyRef.Name,
+					rb.Spec.Redis.Connection.TLSCACertificate.SecretKeyRef.Key)(c)
+			}
+
+			if rb.Spec.Redis.Connection.TLSCertificate != nil {
+				resources.ContainerAddEnvVarFromSecret("REDIS_TLS_CERTIFICATE",
+					rb.Spec.Redis.Connection.TLSCertificate.SecretKeyRef.Name,
+					rb.Spec.Redis.Connection.TLSCertificate.SecretKeyRef.Key)(c)
+			}
+
+			if rb.Spec.Redis.Connection.TLSKey != nil {
+				resources.ContainerAddEnvVarFromSecret("REDIS_TLS_KEY",
+					rb.Spec.Redis.Connection.TLSKey.SecretKeyRef.Name,
+					rb.Spec.Redis.Connection.TLSKey.SecretKeyRef.Key)(c)
 			}
 
 			if rb.Spec.Redis.Connection.TLSEnabled != nil && *rb.Spec.Redis.Connection.TLSEnabled {
@@ -96,7 +108,8 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 
 			if rb.Spec.Redis.Connection.TLSSkipVerify != nil && *rb.Spec.Redis.Connection.TLSSkipVerify {
 				tlsSkipVerifyDefault := "true"
-				if rb.Spec.Redis.Connection.CACertificate != nil {
+				// TODO this should be moved to webhook
+				if rb.Spec.Redis.Connection.TLSCACertificate != nil {
 					tlsSkipVerifyDefault = "false"
 				}
 				resources.ContainerAddEnvFromValue("REDIS_TLS_SKIP_VERIFY", tlsSkipVerifyDefault)(c)
