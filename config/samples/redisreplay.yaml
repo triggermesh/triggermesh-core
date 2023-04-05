@@ -4,16 +4,7 @@ kind: RedisReplay
 metadata:
   name: example-redisreplay
 spec:
-  broker:
-    apiVersion: eventing.triggermesh.io/v1alpha1
-    kind: RedisBroker
-    name: demo-rb-broker
   startTime: "2023-04-04T00:00:00Z"
   endTime: "2023-04-04T23:59:59Z"
   filters:
     - cesql: "type = 'com.example.event'"
-  # target:
-  #   ref:
-  #     apiVersion: serving.knative.dev/v1
-  #     kind: Service
-  #     name: example-service
