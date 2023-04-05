@@ -1,10 +1,19 @@
-# kubectl apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-redis/broker.yaml
+# kubectl -n tm apply -f https://raw.githubusercontent.com/triggermesh/triggermesh-core/main/docs/assets/manifests/getting-started-redis/broker.yaml
 apiVersion: eventing.triggermesh.io/v1alpha1
 kind: RedisReplay
 metadata:
-  name: replay
+  name: example-redisreplay
 spec:
   broker:
     apiVersion: eventing.triggermesh.io/v1alpha1
     kind: RedisBroker
-    name: demo
+    name: demo-rb-broker
+  startTime: "2023-04-04T00:00:00Z"
+  endTime: "2023-04-04T23:59:59Z"
+  filters:
+    - cesql: "type = 'com.example.event'"
+  # target:
+  #   ref:
+  #     apiVersion: serving.knative.dev/v1
+  #     kind: Service
+  #     name: example-service

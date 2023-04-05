@@ -10,6 +10,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/resolver"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
@@ -53,10 +54,9 @@ func NewController(
 		jobsLister: jobinformer.Get(ctx).Lister(),
 		client:     kubeclient.Get(ctx),
 	}
-
 	impl := rrreconciler.NewImpl(ctx, r)
 
+	r.uriResolver = resolver.NewURIResolverFromTracker(ctx, impl.Tracker)
 	rrinformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
-
 	return impl
 }
