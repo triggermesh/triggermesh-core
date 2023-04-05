@@ -56,7 +56,13 @@ type RedisConnection struct {
 	Password *SecretValueFromSource `json:"password,omitempty"`
 
 	// CA Certificate used to connect to Redis.
-	CACertificate *SecretValueFromSource `json:"caCertificate,omitempty"`
+	TLSCACertificate *SecretValueFromSource `json:"tlsCACertificate,omitempty"`
+
+	// Certificate used to connect to authenticate to Redis.
+	TLSCertificate *SecretValueFromSource `json:"tlsCertificate,omitempty"`
+
+	// Certificate Key used to connect to authenticate to Redis.
+	TLSKey *SecretValueFromSource `json:"tlsKey,omitempty"`
 
 	// Use TLS enctrypted connection.
 	TLSEnabled *bool `json:"tlsEnabled,omitempty"`

@@ -25,7 +25,15 @@ spec:
           secretKeyRef:
             name: <Kubernetes secret name>
             key: <Kubernetes secret key>
-        caCertificate: <CA certificate used to connect to redis. Optional>
+        tlsCACertificate: <CA certificate used to connect to redis. Optional>
+          secretKeyRef:
+            name: <Kubernetes secret name>
+            key: <Kubernetes secret key>
+        tlsCertificate: <Certificate used to authenticate to redis. Optional>
+          secretKeyRef:
+            name: <Kubernetes secret name>
+            key: <Kubernetes secret key>
+        tlsKey: <Certificate key used to authenticate to redis. Optional>
           secretKeyRef:
             name: <Kubernetes secret name>
             key: <Kubernetes secret key>

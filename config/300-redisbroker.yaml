@@ -87,8 +87,8 @@ spec:
                                 type: string
                               key:
                                 type: string
-                      caCertificate:
-                        description: Contains a CA Certificate used to connect to Redis.
+                      tlsCACertificate:
+                        description: Contains a CA certificate used to connect to Redis.
                         type: object
                         properties:
                           secretKeyRef:
@@ -99,6 +99,31 @@ spec:
                                 type: string
                               key:
                                 type: string
+                      tlsCertificate:
+                        description: Contains a certificate used to connect to authenticate to Redis.
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            description: A reference to a Kubernetes Secret object.
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+                      tlsKey:
+                        description: Contains a key certificate used to connect to authenticate to Redis.
+                        type: object
+                        properties:
+                          secretKeyRef:
+                            description: A reference to a Kubernetes Secret object.
+                            type: object
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+
                       tlsEnabled:
                         description: Use TLS enctrypted Redis connection.
                         type: boolean
