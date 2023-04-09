@@ -41,41 +41,15 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec defines the desired state of the Trigger.
+            description: Spec defines the desired state of the RedisReplay.
             type: object
             properties:
-              broker:
-                description: Broker is the broker that this trigger receives events from.
-                type: object
-                properties:
-                  apiVersion:
-                    description: API version of the referent.
-                    type: string
-                  group:
-                    description: 'Group of the API, without the version of the group.
-                      This can be used as an alternative to the APIVersion, and then
-                      resolved using ResolveGroup. Note: This API is EXPERIMENTAL
-                      and might break anytime. For more details: https://github.com/knative/eventing/issues/5086'
-                    type: string
-                  kind:
-                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                    type: string
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
-                    type: string
-                  namespace:
-                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
-                      This is optional field, it gets defaulted to the object holding
-                      it if left out.'
-                    type: string
-
               startTime:
                 description: " "
                 type: string
               endTime:
                 description: " "
                 type: string
-                
               filters:
                 description: Filters is an experimental field that conforms to the
                   CNCF CloudEvents Subscriptions API. It's an array of filter expressions
@@ -87,7 +61,7 @@ spec:
                   both Filter and Filters, then the latter will override the former.
                   This will allow users to try out the effect of the new Filters field
                   without compromising the existing attribute-based Filter and try
-                  it out on existing Trigger objects.
+                  it out on existing RedisReplay objects.
                 items:
                   description: SubscriptionsAPIFilter allows defining a filter expression
                     using CloudEvents Subscriptions API. If multiple filters are specified,
@@ -147,7 +121,6 @@ spec:
                       type: object
                   type: object
                 type: array
-
               target:
                 description: Target is the addressable that receives events from the Broker that pass the Filter. It is required.
                 type: object
@@ -185,9 +158,8 @@ spec:
                 oneOf:
                 - required: [ref]
                 - required: [uri]
-
           status:
-            description: Status represents the current state of the Trigger. This data may be out of date.
+            description: Status represents the current state of the RedisReplay. This data may be out of date.
             type: object
             properties:
               annotations:
@@ -221,21 +193,15 @@ spec:
                     type:
                       description: 'Type of condition.'
                       type: string
-              deadLetterSinkUri:
-                description: DeadLetterSinkURI is the resolved URI of the dead letter sink for this Trigger, in case there is none this will fallback to it's Broker status DeadLetterSinkURI.
-                type: string
               observedGeneration:
                 description: ObservedGeneration is the 'Generation' of the Service that was last processed by the controller.
                 type: integer
                 format: int64
               targetUri:
-                description: TargetURI is the resolved URI of the receiver for this Trigger.
+                description: TargetURI is the resolved URI of the receiver for this RedisReplay.
                 type: string
 
     additionalPrinterColumns:
-    - name: Broker
-      type: string
-      jsonPath: .spec.broker.name
     - name: Target_URI
       type: string
       jsonPath: .status.targetUri

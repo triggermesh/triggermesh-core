@@ -16,7 +16,7 @@ import (
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	jobinformer "knative.dev/pkg/client/injection/kube/informers/batch/v1/job"
 
-	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
+	// rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
 	rrinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
 	rrreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisreplay"
 )
@@ -45,13 +45,13 @@ func NewController(
 	}
 
 	rrinformer := rrinformer.Get(ctx)
-	rbinformer := rbinformer.Get(ctx)
+	// rbinformer := rbinformer.Get(ctx)
 
 	// create the reconciler
 	r := &reconciler{
-		rrLister:   rrinformer.Lister(),
-		image:      env.RedisReplayImage,
-		rbLister:   rbinformer.Lister(),
+		rrLister: rrinformer.Lister(),
+		image:    env.RedisReplayImage,
+		// rbLister:   rbinformer.Lister(),
 		jobsLister: jobinformer.Get(ctx).Lister(),
 		client:     kubeclient.Get(ctx),
 	}

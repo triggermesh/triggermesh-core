@@ -5,6 +5,7 @@ package redisreplay
 
 import (
 	"context"
+	"encoding/json"
 
 	"go.uber.org/zap"
 	batchv1 "k8s.io/api/batch/v1"
@@ -41,13 +42,8 @@ func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Redi
 	log := logging.FromContext(ctx)
 	log.Info("Reconciling")
 
-	l, err := r.rbLister.RedisBrokers(t.Namespace).Get(t.Spec.Broker.Name)
-	if err != nil {
-		return err
-	}
-
 	// create a desired job in memory.
-	desired := r.createDesiredJob(ctx, l, t)
+	desired := r.createDesiredJob(ctx, t)
 
 	current, err := r.jobsLister.Jobs(t.Namespace).Get(desired.Name)
 	switch {
@@ -79,8 +75,8 @@ func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Redi
 	return nil
 }
 
-func (r *reconciler) createDesiredJob(ctx context.Context, rb *eventingv1alpha1.RedisBroker, rr *eventingv1alpha1.RedisReplay) *batchv1.Job {
-	meta := rb.GetObjectMeta()
+func (r *reconciler) createDesiredJob(ctx context.Context, rr *eventingv1alpha1.RedisReplay) *batchv1.Job {
+	meta := rr.GetObjectMeta()
 	var startime, stoptime string
 	if rr.Spec.StartTime == nil {
 		startime = "0"
@@ -93,14 +89,30 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rb *eventingv1alpha1.
 		stoptime = *rr.Spec.EndTime
 	}
 
+	ownerReference := metav1.OwnerReference{
+		APIVersion: rr.APIVersion,
+		Kind:       rr.Kind,
+		Name:       rr.Name,
+		UID:        rr.UID,
+	}
+
 	ns, name := meta.GetNamespace(), meta.GetName()
 	copts := []resources.ContainerOption{
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("REDIS_ADDRESS", "demo-rb-redis:6379"),
-		resources.ContainerAddEnvFromValue("K_SINK", "demo-rb-broker:6379"),
+		resources.ContainerAddEnvFromValue("K_SINK", "http://demo-rb-broker"),
 		resources.ContainerAddEnvFromValue("START_TIME", startime),
 		resources.ContainerAddEnvFromValue("END_TIME", stoptime),
 		resources.ContainerWithImagePullPolicy(v1.PullAlways),
+	}
+
+	if rr.Spec.Filters != nil {
+		filtersJSON, err := json.Marshal(rr.Spec.Filters)
+		if err != nil {
+			logging.FromContext(ctx).Errorw("some bad shit happend bro..")
+		} else {
+			copts = append(copts, resources.ContainerAddEnvFromValue("FILTERS", string(filtersJSON)))
+		}
 	}
 
 	jobopt := []resources.JobOption{
@@ -108,6 +120,7 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rb *eventingv1alpha1.
 			resources.PodTemplateSpecWithMetaOptions(
 				resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
 				resources.MetaAddLabel(resources.AppManagedByLabel, resources.ManagedBy),
+				resources.MetaAddOwnerReferences(ownerReference),
 			),
 			resources.PodTemplateSpecWithRestartPolicy(v1.RestartPolicyNever),
 			resources.PodTemplateSpecWithPodSpecOptions(

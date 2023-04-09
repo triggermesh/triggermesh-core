@@ -64,3 +64,9 @@ func MetaSetDeletion(t *metav1.Time) MetaOption {
 		m.DeletionTimestamp = t
 	}
 }
+
+func MetaAddOwnerReferences(ownerReference metav1.OwnerReference) MetaOption {
+	return func(m *metav1.ObjectMeta) {
+		m.OwnerReferences = append(m.OwnerReferences, ownerReference)
+	}
+}
