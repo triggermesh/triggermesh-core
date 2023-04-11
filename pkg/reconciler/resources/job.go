@@ -68,3 +68,19 @@ func PodTemplateSpecWithRestartPolicy(policy corev1.RestartPolicy) PodTemplateSp
 		pts.Spec.RestartPolicy = policy
 	}
 }
+
+// jobwithttlsecondsafterfinished sets the ttlSecondsAfterFinished field on the job
+// to the given value. This is a beta feature in Kubernetes 1.12.
+func JobWithTTLSecondsAfterFinished(ttl int32) JobOption {
+	return func(j *batchv1.Job) {
+		j.Spec.TTLSecondsAfterFinished = &ttl
+	}
+}
+
+// jobwithretrypolicy sets the backofflimit field on the job
+// to the given value.
+func JobWithRetryPolicy(limit int32) JobOption {
+	return func(j *batchv1.Job) {
+		j.Spec.BackoffLimit = &limit
+	}
+}

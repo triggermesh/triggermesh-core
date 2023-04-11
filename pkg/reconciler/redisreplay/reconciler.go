@@ -6,6 +6,7 @@ package redisreplay
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"go.uber.org/zap"
 	batchv1 "k8s.io/api/batch/v1"
@@ -59,6 +60,9 @@ func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Redi
 				return pkgreconciler.NewEvent(corev1.EventTypeWarning, "InternalError", "Failed to update Job %q: %v", fullname, err)
 			}
 		}
+		// the job existed
+		fmt.Println("find me")
+		fmt.Printf("%+v\n", current.Status)
 	case !apierrs.IsNotFound(err):
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Errorw("Failed to get Job", zap.String("job", fullname.String()), zap.Error(err))
@@ -89,9 +93,10 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rr *eventingv1alpha1.
 		stoptime = *rr.Spec.EndTime
 	}
 
+	gvk := rr.GetGroupVersionKind()
 	ownerReference := metav1.OwnerReference{
-		APIVersion: rr.APIVersion,
-		Kind:       rr.Kind,
+		APIVersion: gvk.GroupVersion().String(),
+		Kind:       gvk.Kind,
 		Name:       rr.Name,
 		UID:        rr.UID,
 	}
@@ -116,6 +121,8 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rr *eventingv1alpha1.
 	}
 
 	jobopt := []resources.JobOption{
+		resources.JobWithRetryPolicy(3),
+		// resources.JobWithTTLSecondsAfterFinished(2),
 		resources.JobWithTemplateSpecOptions(
 			resources.PodTemplateSpecWithMetaOptions(
 				resources.MetaAddLabel(resources.AppPartOfLabel, resources.PartOf),
