@@ -5,6 +5,7 @@ package semantic
 
 import (
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,6 +25,7 @@ var Semantic = conversion.EqualitiesOrDie(
 	serviceAccountEqual,
 	serviceEqual,
 	secretEqual,
+	jobEqual,
 )
 
 // eq is an instance of Equalities for internal deep derivative comparisons
@@ -166,6 +168,25 @@ func serviceAccountEqual(a, b *corev1.ServiceAccount) bool {
 		return false
 	}
 	if !eq.DeepDerivative(&a.AutomountServiceAccountToken, &b.AutomountServiceAccountToken) {
+		return false
+	}
+
+	return true
+}
+
+func jobEqual(a, b *batchv1.Job) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+
+	if !eq.DeepDerivative(&a.ObjectMeta, &b.ObjectMeta) {
+		return false
+	}
+
+	if !eq.DeepDerivative(&a.Spec, &b.Spec) {
 		return false
 	}
 
