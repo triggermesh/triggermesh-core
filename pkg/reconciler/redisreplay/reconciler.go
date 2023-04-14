@@ -10,13 +10,13 @@ import (
 
 	"go.uber.org/zap"
 	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	batchv1listers "k8s.io/client-go/listers/batch/v1"
+	"knative.dev/pkg/apis"
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
@@ -32,7 +32,6 @@ type reconciler struct {
 	client      kubernetes.Interface
 	rrLister    eventingv1alpha1listers.RedisReplayLister
 	jobsLister  batchv1listers.JobLister
-	rbLister    eventingv1alpha1listers.RedisBrokerLister
 	uriResolver *resolver.URIResolver
 
 	image      string
@@ -42,6 +41,8 @@ type reconciler struct {
 func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.RedisReplay) pkgreconciler.Event {
 	log := logging.FromContext(ctx)
 	log.Info("Reconciling")
+	t.Status.InitializeConditions()
+	t.Status.ObservedGeneration = t.Generation
 
 	// create a desired job in memory.
 	desired := r.createDesiredJob(ctx, t)
@@ -57,24 +58,85 @@ func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Redi
 			if err != nil {
 				fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 				logging.FromContext(ctx).Errorw("Failed to update Job", zap.String("job", fullname.String()), zap.Error(err))
-				return pkgreconciler.NewEvent(corev1.EventTypeWarning, "InternalError", "Failed to update Job %q: %v", fullname, err)
+				t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Failure to update Job")
+				return pkgreconciler.NewEvent(v1.EventTypeWarning, "InternalError", "Failed to update Job %q: %v", fullname, err)
 			}
 		}
-		// the job existed
-		fmt.Println("find me")
-		fmt.Printf("%+v\n", current.Status)
+		if current.Status.Active == 0 && current.Status.Succeeded == 0 && current.Status.Failed == 0 {
+			fmt.Println("look at me")
+			fmt.Printf("%+v", current.Status)
+			fmt.Println("look at me done")
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Unknown", "Unknown Job status")
+			return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobUnknown", "Job %q has unknown status", desired.Name)
+		}
+
+		switch &current.Status {
+		case nil:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "processing", "Job is processing")
+			// return pkgreconciler.NewEvent(v1.EventTypeNormal, "JobCreated", "Job %q has been created", desired.Name)
+			return nil
+		case &batchv1.JobStatus{}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "processing", "Job is processing")
+			// return pkgreconciler.NewEvent(v1.EventTypeNormal, "JobCreated", "Job %q has been created", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Succeeded: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "Ok", "Everything is OK.")
+			// return pkgreconciler.NewEvent(v1.EventTypeNormal, "JobSucceeded", "Job %q has succeeded", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Failed: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Job failed")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobFailed", "Job %q has failed", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Active: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "processing", "Job is processing")
+			// return pkgreconciler.NewEvent(v1.EventTypeNormal, "JobCreated", "Job %q has been created", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Succeeded: 1, Failed: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Job failed")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobFailed", "Job %q has failed", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Succeeded: 1, Active: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "processing", "Job is processing")
+			// return pkgreconciler.NewEvent(v1.EventTypeNormal, "JobCreated", "Job %q has been created", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Failed: 1, Active: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Job failed")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobFailed", "Job %q has failed", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Succeeded: 1, Failed: 1, Active: 1}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Job failed")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobFailed", "Job %q has failed", desired.Name)
+			return nil
+		case &batchv1.JobStatus{Failed: 2}:
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", "Job failed")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobFailed", "Job %q has failed", desired.Name)
+			return nil
+		// case
+		default:
+			// fmt.Println("look at me")
+			// fmt.Printf("%+v", current.Status)
+			// fmt.Println("look at me done")
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Unknown", "Unknown Job status")
+			// return pkgreconciler.NewEvent(v1.EventTypeWarning, "JobUnknown", "Job %q has unknown status", desired.Name)
+			return nil
+		}
+
 	case !apierrs.IsNotFound(err):
 		fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 		logging.FromContext(ctx).Errorw("Failed to get Job", zap.String("job", fullname.String()), zap.Error(err))
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, "InternalError", "Failed to get Job %q: %v", fullname, err)
+		return pkgreconciler.NewEvent(v1.EventTypeWarning, "InternalError", "Failed to get Job %q: %v", fullname, err)
 	default:
 		_, err = r.client.BatchV1().Jobs(t.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			fullname := types.NamespacedName{Namespace: desired.Namespace, Name: desired.Name}
 			logging.FromContext(ctx).Errorw("Failed to create Job", zap.String("job", fullname.String()), zap.Error(err))
-			return pkgreconciler.NewEvent(corev1.EventTypeWarning, "InternalError", "Failed to create Job %q: %v", fullname, err)
+			t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionError, v1.ConditionTrue, apis.ConditionSeverityError, "Error", fmt.Sprintf("Failure to create Job %v", err))
+			return pkgreconciler.NewEvent(v1.EventTypeWarning, "InternalError", "Failed to create Job %q: %v", fullname, err)
 		}
+		t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "Ok", "Everything is OK.")
 	}
+
+	t.Status.MarkCondition(eventingv1alpha1.RedisReplayConditionOK, v1.ConditionTrue, apis.ConditionSeverityInfo, "processing", "Job is processing")
 
 	return nil
 }
@@ -101,11 +163,17 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rr *eventingv1alpha1.
 		UID:        rr.UID,
 	}
 
+	var target string
+	if rr.Spec.Target != nil {
+		target = rr.Spec.Target.URI.String()
+	} else {
+		target = "http://demo-rb-broker"
+	}
 	ns, name := meta.GetNamespace(), meta.GetName()
 	copts := []resources.ContainerOption{
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("REDIS_ADDRESS", "demo-rb-redis:6379"),
-		resources.ContainerAddEnvFromValue("K_SINK", "http://demo-rb-broker"),
+		resources.ContainerAddEnvFromValue("K_SINK", target),
 		resources.ContainerAddEnvFromValue("START_TIME", startime),
 		resources.ContainerAddEnvFromValue("END_TIME", stoptime),
 		resources.ContainerWithImagePullPolicy(v1.PullAlways),
@@ -114,7 +182,7 @@ func (r *reconciler) createDesiredJob(ctx context.Context, rr *eventingv1alpha1.
 	if rr.Spec.Filters != nil {
 		filtersJSON, err := json.Marshal(rr.Spec.Filters)
 		if err != nil {
-			logging.FromContext(ctx).Errorw("some bad shit happend bro..")
+			logging.FromContext(ctx).Errorw("Failed to marshal filters", zap.Error(err))
 		} else {
 			copts = append(copts, resources.ContainerAddEnvFromValue("FILTERS", string(filtersJSON)))
 		}

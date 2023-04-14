@@ -159,7 +159,7 @@ spec:
                 - required: [ref]
                 - required: [uri]
           status:
-            description: Status represents the current state of the RedisReplay. This data may be out of date.
+            description: Status represents the current state of the RedisReplay. 
             type: object
             properties:
               annotations:
@@ -208,6 +208,12 @@ spec:
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp
+    - name: Error
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Error\")].status"
+    - name: Ok
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"Ok\")].status"
     - name: Ready
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"

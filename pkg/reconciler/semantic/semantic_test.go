@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -222,6 +223,104 @@ const (
     }
 }
 `
+
+	tJob = `
+{
+	"apiVersion": "batch/v1",
+	"kind": "Job",
+	"metadata": {
+		"annotations": {
+			"batch.kubernetes.io/job-tracking": ""
+		},
+		"creationTimestamp": "2023-04-12T08:32:12Z",
+		"generation": 1,
+		"labels": {
+			"app.kubernetes.io/managed-by": "triggermesh-core",
+			"app.kubernetes.io/part-of": "triggermesh",
+			"controller-uid": "dad9425a-3410-40ea-832e-31b087f8f808",
+			"job-name": "test"
+		},
+		"name": "test",
+		"namespace": "default",
+		"resourceVersion": "650907",
+		"uid": "dad9425a-3410-40ea-832e-31b087f8f808"
+	},
+	"spec": {
+		"backoffLimit": 3,
+		"completionMode": "NonIndexed",
+		"completions": 1,
+		"parallelism": 1,
+		"selector": {
+			"matchLabels": {
+				"controller-uid": "dad9425a-3410-40ea-832e-31b087f8f808"
+			}
+		},
+		"suspend": false,
+		"template": {
+			"metadata": {
+				"creationTimestamp": null,
+				"labels": {
+					"app.kubernetes.io/managed-by": "triggermesh-core",
+					"app.kubernetes.io/part-of": "triggermesh",
+					"controller-uid": "dad9425a-3410-40ea-832e-31b087f8f808",
+					"job-name": "test"
+				},
+				"ownerReferences": [
+					{
+						"apiVersion": "eventing.triggermesh.io/v1alpha1",
+						"kind": "TestKind",
+						"name": "test",
+						"uid": "186f3c1b-952b-4e45-9837-2ee6bd4436ec"
+					}
+				]
+			},
+			"spec": {
+				"containers": [
+					{
+						"env": [
+                            {
+                                "name": "ENV_ONE",
+                                "value": "1"
+                            },
+                            {
+                                "name": "ENV_TWO",
+                                "value": "2"
+                            }
+						],
+						"image": "test/test:latest",
+						"imagePullPolicy": "Always",
+						"name": "test",
+						"resources": {},
+						"terminationMessagePath": "/dev/termination-log",
+						"terminationMessagePolicy": "File"
+					}
+				],
+				"dnsPolicy": "ClusterFirst",
+				"restartPolicy": "Never",
+				"schedulerName": "default-scheduler",
+				"securityContext": {},
+				"terminationGracePeriodSeconds": 30
+			}
+		}
+	},
+	"status": {
+		"conditions": [
+			{
+				"lastProbeTime": "2023-04-12T08:34:02Z",
+				"lastTransitionTime": "2023-04-12T08:34:02Z",
+				"message": "Job has reached the specified backoff limit",
+				"reason": "BackoffLimitExceeded",
+				"status": "True",
+				"type": "Failed"
+			}
+		],
+		"failed": 1,
+		"ready": 0,
+		"startTime": "2023-04-12T08:32:12Z",
+		"uncountedTerminatedPods": {}
+	}
+}
+`
 )
 
 func TestDeploymentEqual(t *testing.T) {
@@ -402,5 +501,92 @@ func loadFixture(t *testing.T, contents string, obj runtime.Object) {
 
 	if err := json.Unmarshal([]byte(contents), obj); err != nil {
 		t.Fatalf("Error deserializing fixture object: %s", err)
+	}
+}
+
+func TestJobEqual(t *testing.T) {
+	current := &batchv1.Job{}
+	loadFixture(t, tJob, current)
+
+	require.GreaterOrEqual(t, len(current.Labels), 2,
+		"Test suite requires a reference object with at least 2 labels to run properly")
+	require.True(t, len(current.Spec.Template.Spec.Containers) > 0 &&
+		len(current.Spec.Template.Spec.Containers[0].Env) > 0 &&
+		current.Spec.Template.Spec.Containers[0].Env[0].Value != "",
+		"Test suite requires a reference object with a Container that has at least 1 EnvVar to run properly")
+
+	assert.True(t, deploymentEqual(nil, nil), "Two nil elements should be equal")
+
+	testCases := map[string]struct {
+		prep   func() *batchv1.Job
+		expect bool
+	}{
+		"not equal when one element is nil": {
+			func() *batchv1.Job {
+				return nil
+			},
+			false,
+		},
+		// counter intuitive but expected result for deep derivative comparisons
+		"equal when all desired attributes are empty": {
+			func() *batchv1.Job {
+				return &batchv1.Job{}
+			},
+			true,
+		},
+		"not equal when some existing attribute differs": {
+			func() *batchv1.Job {
+				desired := current.DeepCopy()
+				for k := range desired.Labels {
+					desired.Labels[k] += "test"
+					break // changing one is enough
+				}
+				return desired
+			},
+			false,
+		},
+		"equal when current has more attributes than desired": {
+			func() *batchv1.Job {
+				desired := current.DeepCopy()
+				for k := range desired.Labels {
+					delete(desired.Labels, k)
+					break // deleting one is enough
+				}
+				return desired
+			},
+			true,
+		},
+		"not equal when desired has more attributes than current": {
+			func() *batchv1.Job {
+				desired := current.DeepCopy()
+				for k := range desired.Labels {
+					desired.Labels[k+"test"] = "test"
+					break // adding one is enough
+				}
+				return desired
+			},
+			false,
+		},
+		"not equal when EnvVar desired value is empty": {
+			func() *batchv1.Job {
+				desired := current.DeepCopy()
+				desired.Spec.Template.Spec.Containers[0].Env[0].Value = ""
+				return desired
+			},
+			false,
+		},
+	}
+
+	for name, tc := range testCases {
+		//nolint:scopelint
+		t.Run(name, func(t *testing.T) {
+			desired := tc.prep()
+			switch tc.expect {
+			case true:
+				assert.True(t, jobEqual(desired, current))
+			case false:
+				assert.False(t, jobEqual(desired, current))
+			}
+		})
 	}
 }
