@@ -7,7 +7,7 @@ package fake
 import (
 	context "context"
 
-	filtered "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay/filtered"
+	filtered "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/replay/filtered"
 	factoryfiltered "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/factory/filtered"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
@@ -30,7 +30,7 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 	infs := []controller.Informer{}
 	for _, selector := range labelSelectors {
 		f := factoryfiltered.Get(ctx, selector)
-		inf := f.Eventing().V1alpha1().RedisReplays()
+		inf := f.Eventing().V1alpha1().Replays()
 		ctx = context.WithValue(ctx, filtered.Key{Selector: selector}, inf)
 		infs = append(infs, inf.Informer())
 	}

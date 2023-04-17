@@ -4,16 +4,16 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: redisreplays.eventing.triggermesh.io
+  name: replays.eventing.triggermesh.io
   labels:
     triggermesh.io/crd-install: 'true'
 spec:
   group: eventing.triggermesh.io
   scope: Namespaced
   names:
-    kind: RedisReplay
-    plural: redisreplays
-    singular: redisreplay
+    kind: Replay
+    plural: replays
+    singular: replay
     categories:
     - all
     - triggermesh
@@ -41,7 +41,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec defines the desired state of the RedisReplay.
+            description: Spec defines the desired state of the Replay.
             type: object
             properties:
               startTime:
@@ -61,7 +61,7 @@ spec:
                   both Filter and Filters, then the latter will override the former.
                   This will allow users to try out the effect of the new Filters field
                   without compromising the existing attribute-based Filter and try
-                  it out on existing RedisReplay objects.
+                  it out on existing Replay objects.
                 items:
                   description: SubscriptionsAPIFilter allows defining a filter expression
                     using CloudEvents Subscriptions API. If multiple filters are specified,
@@ -159,7 +159,7 @@ spec:
                 - required: [ref]
                 - required: [uri]
           status:
-            description: Status represents the current state of the RedisReplay. 
+            description: Status represents the current state of the Replay. 
             type: object
             properties:
               annotations:
@@ -198,7 +198,7 @@ spec:
                 type: integer
                 format: int64
               targetUri:
-                description: TargetURI is the resolved URI of the receiver for this RedisReplay.
+                description: TargetURI is the resolved URI of the receiver for this Replay.
                 type: string
 
     additionalPrinterColumns:

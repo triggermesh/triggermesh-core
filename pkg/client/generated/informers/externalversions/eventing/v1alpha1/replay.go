@@ -18,59 +18,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// RedisReplayInformer provides access to a shared informer and lister for
-// RedisReplays.
-type RedisReplayInformer interface {
+// ReplayInformer provides access to a shared informer and lister for
+// Replays.
+type ReplayInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.RedisReplayLister
+	Lister() v1alpha1.ReplayLister
 }
 
-type redisReplayInformer struct {
+type replayInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewRedisReplayInformer constructs a new informer for RedisReplay type.
+// NewReplayInformer constructs a new informer for Replay type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewRedisReplayInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredRedisReplayInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewReplayInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredReplayInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredRedisReplayInformer constructs a new informer for RedisReplay type.
+// NewFilteredReplayInformer constructs a new informer for Replay type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredRedisReplayInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredReplayInformer(client internalclientset.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1alpha1().RedisReplays(namespace).List(context.TODO(), options)
+				return client.EventingV1alpha1().Replays(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.EventingV1alpha1().RedisReplays(namespace).Watch(context.TODO(), options)
+				return client.EventingV1alpha1().Replays(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&eventingv1alpha1.RedisReplay{},
+		&eventingv1alpha1.Replay{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *redisReplayInformer) defaultInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredRedisReplayInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *replayInformer) defaultInformer(client internalclientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredReplayInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *redisReplayInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&eventingv1alpha1.RedisReplay{}, f.defaultInformer)
+func (f *replayInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&eventingv1alpha1.Replay{}, f.defaultInformer)
 }
 
-func (f *redisReplayInformer) Lister() v1alpha1.RedisReplayLister {
-	return v1alpha1.NewRedisReplayLister(f.Informer().GetIndexer())
+func (f *replayInformer) Lister() v1alpha1.ReplayLister {
+	return v1alpha1.NewReplayLister(f.Informer().GetIndexer())
 }

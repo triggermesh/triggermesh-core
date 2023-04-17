@@ -14,8 +14,8 @@ type Interface interface {
 	MemoryBrokers() MemoryBrokerInformer
 	// RedisBrokers returns a RedisBrokerInformer.
 	RedisBrokers() RedisBrokerInformer
-	// RedisReplays returns a RedisReplayInformer.
-	RedisReplays() RedisReplayInformer
+	// Replays returns a ReplayInformer.
+	Replays() ReplayInformer
 	// Triggers returns a TriggerInformer.
 	Triggers() TriggerInformer
 }
@@ -41,9 +41,9 @@ func (v *version) RedisBrokers() RedisBrokerInformer {
 	return &redisBrokerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// RedisReplays returns a RedisReplayInformer.
-func (v *version) RedisReplays() RedisReplayInformer {
-	return &redisReplayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// Replays returns a ReplayInformer.
+func (v *version) Replays() ReplayInformer {
+	return &replayInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Triggers returns a TriggerInformer.

@@ -1,7 +1,7 @@
 // Copyright 2023 TriggerMesh Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-package redisreplay
+package replay
 
 import (
 	"context"
@@ -19,16 +19,16 @@ import (
 
 	"github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	// rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
-	rrinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
-	rrreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisreplay"
+	rrinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/replay"
+	rrreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/replay"
 )
 
 // envConfig will be used to extract the required environment variables using
 // github.com/kelseyhightower/envconfig. If this configuration cannot be extracted, then
 // NewController will panic.
 type envConfig struct {
-	RedisReplayImage string `envconfig:"REDISBROKER_REPLAY_IMAGE" required:"true"`
-	ImagePullPolicy  string `envconfig:"IMAGE_PULL_POLICY" default:"IfNotPresent"`
+	ReplayImage     string `envconfig:"REDISBROKER_REPLAY_IMAGE" required:"true"`
+	ImagePullPolicy string `envconfig:"IMAGE_PULL_POLICY" default:"IfNotPresent"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -39,11 +39,11 @@ func NewController(
 ) *controller.Impl {
 
 	// log that we are starting the controller
-	logging.FromContext(ctx).Info("Starting RedisReplay controller")
+	logging.FromContext(ctx).Info("Starting Replay controller")
 
 	env := &envConfig{}
 	if err := envconfig.Process("", env); err != nil {
-		logging.FromContext(ctx).Panicf("unable to process RedisReplay's required environment variables: %v", err)
+		logging.FromContext(ctx).Panicf("unable to process Replay's required environment variables: %v", err)
 	}
 
 	rrinformer := rrinformer.Get(ctx)
@@ -53,7 +53,7 @@ func NewController(
 	// create the reconciler
 	r := &reconciler{
 		rrLister: rrinformer.Lister(),
-		image:    env.RedisReplayImage,
+		image:    env.ReplayImage,
 		// rbLister:   rbinformer.Lister(),
 		jobsLister: jobinformer.Get(ctx).Lister(),
 		client:     kubeclient.Get(ctx),
@@ -67,7 +67,7 @@ func NewController(
 
 	rrinformer.Informer().AddEventHandler(controller.HandleAll(impl.Enqueue))
 	jinformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: controller.FilterController(&v1alpha1.RedisReplay{}),
+		FilterFunc: controller.FilterController(&v1alpha1.Replay{}),
 		Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 	})
 	return impl

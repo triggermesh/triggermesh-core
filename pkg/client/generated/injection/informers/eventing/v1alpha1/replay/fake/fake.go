@@ -7,13 +7,13 @@ package fake
 import (
 	context "context"
 
-	redisreplay "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisreplay"
+	replay "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/replay"
 	fake "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/factory/fake"
 	controller "knative.dev/pkg/controller"
 	injection "knative.dev/pkg/injection"
 )
 
-var Get = redisreplay.Get
+var Get = replay.Get
 
 func init() {
 	injection.Fake.RegisterInformer(withInformer)
@@ -21,6 +21,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Eventing().V1alpha1().RedisReplays()
-	return context.WithValue(ctx, redisreplay.Key{}, inf), inf.Informer()
+	inf := f.Eventing().V1alpha1().Replays()
+	return context.WithValue(ctx, replay.Key{}, inf), inf.Informer()
 }

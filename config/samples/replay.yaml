@@ -1,0 +1,9 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: Replay
+metadata:
+  name: replay
+spec:
+  startTime: "2023-04-04T00:00:00Z"
+  endTime: "2023-04-04T23:59:59Z"
+  filters:
+    - cesql: "type = 'com.example.event'"

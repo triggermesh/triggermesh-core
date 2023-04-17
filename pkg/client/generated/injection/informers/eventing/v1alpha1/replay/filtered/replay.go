@@ -41,7 +41,7 @@ func withInformer(ctx context.Context) (context.Context, []controller.Informer) 
 	infs := []controller.Informer{}
 	for _, selector := range labelSelectors {
 		f := filtered.Get(ctx, selector)
-		inf := f.Eventing().V1alpha1().RedisReplays()
+		inf := f.Eventing().V1alpha1().Replays()
 		ctx = context.WithValue(ctx, Key{Selector: selector}, inf)
 		infs = append(infs, inf.Informer())
 	}
@@ -63,13 +63,13 @@ func withDynamicInformer(ctx context.Context) context.Context {
 }
 
 // Get extracts the typed informer from the context.
-func Get(ctx context.Context, selector string) v1alpha1.RedisReplayInformer {
+func Get(ctx context.Context, selector string) v1alpha1.ReplayInformer {
 	untyped := ctx.Value(Key{Selector: selector})
 	if untyped == nil {
 		logging.FromContext(ctx).Panicf(
-			"Unable to fetch github.com/triggermesh/triggermesh-core/pkg/client/generated/informers/externalversions/eventing/v1alpha1.RedisReplayInformer with selector %s from context.", selector)
+			"Unable to fetch github.com/triggermesh/triggermesh-core/pkg/client/generated/informers/externalversions/eventing/v1alpha1.ReplayInformer with selector %s from context.", selector)
 	}
-	return untyped.(v1alpha1.RedisReplayInformer)
+	return untyped.(v1alpha1.ReplayInformer)
 }
 
 type wrapper struct {
@@ -80,28 +80,28 @@ type wrapper struct {
 	selector string
 }
 
-var _ v1alpha1.RedisReplayInformer = (*wrapper)(nil)
-var _ eventingv1alpha1.RedisReplayLister = (*wrapper)(nil)
+var _ v1alpha1.ReplayInformer = (*wrapper)(nil)
+var _ eventingv1alpha1.ReplayLister = (*wrapper)(nil)
 
 func (w *wrapper) Informer() cache.SharedIndexInformer {
-	return cache.NewSharedIndexInformer(nil, &apiseventingv1alpha1.RedisReplay{}, 0, nil)
+	return cache.NewSharedIndexInformer(nil, &apiseventingv1alpha1.Replay{}, 0, nil)
 }
 
-func (w *wrapper) Lister() eventingv1alpha1.RedisReplayLister {
+func (w *wrapper) Lister() eventingv1alpha1.ReplayLister {
 	return w
 }
 
-func (w *wrapper) RedisReplays(namespace string) eventingv1alpha1.RedisReplayNamespaceLister {
+func (w *wrapper) Replays(namespace string) eventingv1alpha1.ReplayNamespaceLister {
 	return &wrapper{client: w.client, namespace: namespace, selector: w.selector}
 }
 
-func (w *wrapper) List(selector labels.Selector) (ret []*apiseventingv1alpha1.RedisReplay, err error) {
+func (w *wrapper) List(selector labels.Selector) (ret []*apiseventingv1alpha1.Replay, err error) {
 	reqs, err := labels.ParseToRequirements(w.selector)
 	if err != nil {
 		return nil, err
 	}
 	selector = selector.Add(reqs...)
-	lo, err := w.client.EventingV1alpha1().RedisReplays(w.namespace).List(context.TODO(), v1.ListOptions{
+	lo, err := w.client.EventingV1alpha1().Replays(w.namespace).List(context.TODO(), v1.ListOptions{
 		LabelSelector: selector.String(),
 		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
 	})
@@ -114,9 +114,9 @@ func (w *wrapper) List(selector labels.Selector) (ret []*apiseventingv1alpha1.Re
 	return ret, nil
 }
 
-func (w *wrapper) Get(name string) (*apiseventingv1alpha1.RedisReplay, error) {
+func (w *wrapper) Get(name string) (*apiseventingv1alpha1.Replay, error) {
 	// TODO(mattmoor): Check that the fetched object matches the selector.
-	return w.client.EventingV1alpha1().RedisReplays(w.namespace).Get(context.TODO(), name, v1.GetOptions{
+	return w.client.EventingV1alpha1().Replays(w.namespace).Get(context.TODO(), name, v1.GetOptions{
 		// TODO(mattmoor): Incorporate resourceVersion bounds based on staleness criteria.
 	})
 }

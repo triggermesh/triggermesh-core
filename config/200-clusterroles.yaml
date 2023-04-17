@@ -71,7 +71,7 @@ rules:
   resources:
   - memorybrokers
   - redisbrokers
-  - redisreplays
+  - replays
   - triggers
   verbs:
   - list
@@ -83,7 +83,7 @@ rules:
   resources:
   - memorybrokers/status
   - redisbrokers/status
-  - redisreplays/status
+  - replays/status
   - triggers/status
   verbs:
   - update
@@ -96,7 +96,7 @@ rules:
   resources:
   - memorybrokers/finalizers
   - redisbrokers/finalizers
-  - redisreplays/finalizers
+  - replays/finalizers
   - triggers/finalizers
   verbs:
   - update
@@ -107,7 +107,7 @@ rules:
   resources:
   - memorybrokers
   - redisbrokers
-  - redisreplays
+  - replays
   - triggers
   verbs:
   - patch

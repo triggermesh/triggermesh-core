@@ -22,9 +22,9 @@ var (
 		Resource: "memorybrokers",
 	}
 
-	// RedisReplayResources represents a TriggerMesh Redis Replay
-	RedisReplayResources = schema.GroupResource{
+	// ReplayResources represents a TriggerMesh Redis Replay
+	ReplayResources = schema.GroupResource{
 		Group:    GroupName,
-		Resource: "redisreplays",
+		Resource: "replays",
 	}
 )
