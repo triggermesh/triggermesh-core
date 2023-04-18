@@ -34,8 +34,7 @@ type reconciler struct {
 	jobsLister  batchv1listers.JobLister
 	uriResolver *resolver.URIResolver
 
-	image      string
-	pullPolicy string
+	image string
 }
 
 func (r *reconciler) ReconcileKind(ctx context.Context, t *eventingv1alpha1.Replay) pkgreconciler.Event {
