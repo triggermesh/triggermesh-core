@@ -80,6 +80,9 @@ type Redis struct {
 
 	// Maximum number of items the stream can host.
 	StreamMaxLen *int `json:"streamMaxLen,omitempty"`
+
+	// Whether the Redis ID for the event is added as a CloudEvents attribute.
+	EnableTrackingID *bool `json:"enableTrackingID,omitempty"`
 }
 
 // SecretValueFromSource represents the source of a secret value

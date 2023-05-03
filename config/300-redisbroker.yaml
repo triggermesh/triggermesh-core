@@ -141,7 +141,9 @@ spec:
                     description: Maximum number of items (approximate) the Redis stream can host.
                     type: integer
                     default: 1000
-
+                  enableTrackingID:
+                    description: Whether the Redis ID for the event is added as a CloudEvents attribute. Defaults to false
+                    type: boolean
               broker:
                 description: Broker options.
                 type: object
