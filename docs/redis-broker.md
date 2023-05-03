@@ -41,17 +41,19 @@ spec:
         tlsSkipVerify: <boolean that skips verifying TLS certificates. Optional, defaults to false>
     stream: <Redis stream name. Optional, defaults to a combination of namespace and broker name>
     streamMaxLen: <maximum number of items the Redis stream can host. Optional, defaults to unlimited>
+    enableTrackingID: <boolean that indicates if the Redis ID should be written as the CloudEvent attribute triggermeshbackendid>
   broker:
     port: <HTTP port for ingesting events>
     observability:
       valueFromConfigMap: <kubernetes ConfigMap that contains observability configuration>
 ```
 
-The only `RedisBroker` specific parameters are:
+The `RedisBroker` specific parameters are:
 
 - `spec.redis.connection`. When not used the broker will spin up a managed Redis Deployment. However for production scenarios that require HA and hardened security it is recommended to provide the connection to a user managed Redis instance.
 - `spec.stream` is the Redis stream name to be used by the broker. If it doesn't exists the Broker will create it.
 - `spec.streamMaxLen` is the maximum number of elements that the stream will contain.
+- `spec.enableTrackingID` when set adds the `triggermeshbackendid` CloudEvents attribute containing the Redis ID for the message to all outgoing events.
 
 The `spec.broker` section contains generic Borker parameters:
 

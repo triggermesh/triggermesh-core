@@ -60,6 +60,10 @@ func redisDeploymentOption(rb *eventingv1alpha1.RedisBroker, redisSvc *corev1.Se
 		}
 		resources.ContainerAddEnvFromValue("REDIS_STREAM_MAX_LEN", maxLen)(c)
 
+		if rb.Spec.Redis != nil && rb.Spec.Redis.EnableTrackingID != nil && *rb.Spec.Redis.EnableTrackingID {
+			resources.ContainerAddEnvFromValue("REDIS_TRACKING_ID_ENABLED", "true")(c)
+		}
+
 		if rb.IsUserProvidedRedis() {
 
 			// Standalone connections require an address, while cluster connections require an
