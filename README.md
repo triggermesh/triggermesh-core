@@ -30,6 +30,26 @@ Development version can be installed using [ko](https://github.com/ko-build/ko)
 ko apply -f ./config
 ```
 
+### Namespaced installation
+
+TriggerMesh Core controller can be configured to work with a single namespace set at the `WORKING_NAMESPACE` environment variable, which can be added editing the deployment manifest.
+
+```yaml
+        - name: WORKING_NAMESPACE
+          value: my-namespace
+```
+
+When working with a single namespace, all `ClusterRoleBindings` should also be modified adding the namespace to limit the scope of the granted permissions.
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: triggermesh-core-controller
+  namespace: working
+...
+```
+
 ## Concepts
 
 TriggerMesh core contains Kubernetes objects for Brokers and Triggers:
