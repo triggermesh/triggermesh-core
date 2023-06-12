@@ -20,6 +20,14 @@ type RedisBrokerListerExpansion interface{}
 // RedisBrokerNamespaceLister.
 type RedisBrokerNamespaceListerExpansion interface{}
 
+// ReplayListerExpansion allows custom methods to be added to
+// ReplayLister.
+type ReplayListerExpansion interface{}
+
+// ReplayNamespaceListerExpansion allows custom methods to be added to
+// ReplayNamespaceLister.
+type ReplayNamespaceListerExpansion interface{}
+
 // TriggerListerExpansion allows custom methods to be added to
 // TriggerLister.
 type TriggerListerExpansion interface{}

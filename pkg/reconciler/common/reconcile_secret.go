@@ -42,15 +42,17 @@ type secretReconciler struct {
 	client        kubernetes.Interface
 	secretLister  corev1listers.SecretLister
 	triggerLister eventingv1alpha1listers.TriggerLister
+	replayLister  eventingv1alpha1listers.ReplayLister
 }
 
 var _ SecretReconciler = (*secretReconciler)(nil)
 
-func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister) SecretReconciler {
+func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister, replayLister eventingv1alpha1listers.ReplayLister) SecretReconciler {
 	return &secretReconciler{
 		client:        k8sclient.Get(ctx),
 		secretLister:  secretLister,
 		triggerLister: triggerLister,
+		replayLister:  replayLister,
 	}
 }
 
@@ -119,8 +121,18 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 			"Failed to list triggers: %w", err)
 	}
 
+	replays, err := r.replayLister.Replays(ns).List(labels.Everything())
+	if err != nil {
+		logging.FromContext(ctx).Error("Unable to list replays at namespace", zap.Error(err))
+		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedReplayList, "Failed to list replays")
+
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedReplayList,
+			"Failed to list replays: %w", err)
+	}
+
 	cfg := &broker.Config{
 		Triggers: make(map[string]broker.Trigger),
+		Replays:  make(map[string]broker.Replay),
 	}
 	for _, t := range triggers {
 		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
@@ -171,6 +183,54 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 
 		// Add Trigger data to config
 		cfg.Triggers[t.Name] = trg
+	}
+
+	for _, t := range replays {
+		// Generate secret even if the replays is not ready, as long as one of the URIs for target
+		// or DLS exist.
+		if !t.ReferencesBroker(rb) || (t.Status.TargetURI == nil) {
+			continue
+		}
+
+		targetURI := ""
+		if t.Status.TargetURI != nil {
+			targetURI = t.Status.TargetURI.String()
+		} else {
+			// Configure empty URL so that all requests go to DLS when the target is
+			// not ready.
+			targetURI = ""
+		}
+
+		do := &broker.DeliveryOptions{}
+		if t.Spec.Delivery != nil {
+			do.Retry = t.Spec.Delivery.Retry
+			do.BackoffDelay = t.Spec.Delivery.BackoffDelay
+
+			if t.Spec.Delivery.BackoffPolicy != nil {
+				var bop broker.BackoffPolicyType
+				switch *t.Spec.Delivery.BackoffPolicy {
+				case duckv1.BackoffPolicyLinear:
+					bop = broker.BackoffPolicyLinear
+
+				case duckv1.BackoffPolicyExponential:
+					bop = broker.BackoffPolicyLinear
+				}
+				do.BackoffPolicy = &bop
+			}
+		}
+
+		rpl := broker.Replay{
+			StartDate: t.Spec.StartDate,
+			EndDate:   t.Spec.EndDate,
+			Filters:   t.Spec.Filters,
+			Target: broker.Target{
+				URL:             &targetURI,
+				DeliveryOptions: do,
+			},
+		}
+
+		// Add Replay data to config
+		cfg.Replays[t.Name] = rpl
 	}
 
 	// TODO add user/password

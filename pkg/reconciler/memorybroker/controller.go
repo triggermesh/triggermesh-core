@@ -26,6 +26,7 @@ import (
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/memorybroker"
+	rplinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/replay"
 	trginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/common"
@@ -54,6 +55,7 @@ func NewController(
 
 	rbInformer := rbinformer.Get(ctx)
 	trgInformer := trginformer.Get(ctx)
+	rplInformer := rplinformer.Get(ctx)
 	secretInformer := secret.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
@@ -62,7 +64,7 @@ func NewController(
 	roleBindingsInformer := rolebindingsinformer.Get(ctx)
 
 	r := &reconciler{
-		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
+		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister(), rplInformer.Lister()),
 		saReconciler:     common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
 		brokerReconciler: common.NewBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), endpointsInformer.Lister(),
 			env.BrokerImage, corev1.PullPolicy(env.BrokerImagePullPolicy)),

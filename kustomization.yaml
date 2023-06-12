@@ -22,4 +22,5 @@ resources:
 - config/300-memorybroker.yaml
 - config/300-redisbroker.yaml
 - config/300-trigger.yaml
+- config/300-replay.yaml
 - config/500-core-controller.yaml

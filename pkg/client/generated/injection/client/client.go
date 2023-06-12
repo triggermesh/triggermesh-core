@@ -359,6 +359,137 @@ func (w *wrapEventingV1alpha1RedisBrokerImpl) Watch(ctx context.Context, opts v1
 	return nil, errors.New("NYI: Watch")
 }
 
+func (w *wrapEventingV1alpha1) Replays(namespace string) typedeventingv1alpha1.ReplayInterface {
+	return &wrapEventingV1alpha1ReplayImpl{
+		dyn: w.dyn.Resource(schema.GroupVersionResource{
+			Group:    "eventing.triggermesh.io",
+			Version:  "v1alpha1",
+			Resource: "replays",
+		}),
+
+		namespace: namespace,
+	}
+}
+
+type wrapEventingV1alpha1ReplayImpl struct {
+	dyn dynamic.NamespaceableResourceInterface
+
+	namespace string
+}
+
+var _ typedeventingv1alpha1.ReplayInterface = (*wrapEventingV1alpha1ReplayImpl)(nil)
+
+func (w *wrapEventingV1alpha1ReplayImpl) Create(ctx context.Context, in *v1alpha1.Replay, opts v1.CreateOptions) (*v1alpha1.Replay, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "Replay",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Create(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.Replay{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
+	return w.dyn.Namespace(w.namespace).Delete(ctx, name, opts)
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	return w.dyn.Namespace(w.namespace).DeleteCollection(ctx, opts, listOpts)
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.Replay, error) {
+	uo, err := w.dyn.Namespace(w.namespace).Get(ctx, name, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.Replay{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.ReplayList, error) {
+	uo, err := w.dyn.Namespace(w.namespace).List(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.ReplayList{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Replay, err error) {
+	uo, err := w.dyn.Namespace(w.namespace).Patch(ctx, name, pt, data, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.Replay{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) Update(ctx context.Context, in *v1alpha1.Replay, opts v1.UpdateOptions) (*v1alpha1.Replay, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "Replay",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).Update(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.Replay{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) UpdateStatus(ctx context.Context, in *v1alpha1.Replay, opts v1.UpdateOptions) (*v1alpha1.Replay, error) {
+	in.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "eventing.triggermesh.io",
+		Version: "v1alpha1",
+		Kind:    "Replay",
+	})
+	uo := &unstructured.Unstructured{}
+	if err := convert(in, uo); err != nil {
+		return nil, err
+	}
+	uo, err := w.dyn.Namespace(w.namespace).UpdateStatus(ctx, uo, opts)
+	if err != nil {
+		return nil, err
+	}
+	out := &v1alpha1.Replay{}
+	if err := convert(uo, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (w *wrapEventingV1alpha1ReplayImpl) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
+	return nil, errors.New("NYI: Watch")
+}
+
 func (w *wrapEventingV1alpha1) Triggers(namespace string) typedeventingv1alpha1.TriggerInterface {
 	return &wrapEventingV1alpha1TriggerImpl{
 		dyn: w.dyn.Resource(schema.GroupVersionResource{

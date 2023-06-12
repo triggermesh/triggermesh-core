@@ -133,6 +133,7 @@ func TestAllCases(t *testing.T) {
 			secretReconciler: common.NewSecretReconciler(ctx,
 				listers.GetSecretLister(),
 				listers.GetTriggerLister(),
+				listers.GetReplayLister(),
 			),
 			saReconciler: common.NewServiceAccountReconciler(ctx,
 				listers.GetServiceAccountLister(),
