@@ -3,7 +3,7 @@ module github.com/triggermesh/triggermesh-core
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/triggermesh/brokers v1.3.0
 	go.uber.org/zap v1.24.0
 	k8s.io/api v0.26.1
