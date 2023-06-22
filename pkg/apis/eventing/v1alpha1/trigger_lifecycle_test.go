@@ -38,11 +38,13 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						Group: "eventing.triggermesh.io",
-						Kind:  "RedisBroker",
-						Name:  tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							Group: "eventing.triggermesh.io",
+							Kind:  "RedisBroker",
+							Name:  tBrokerName,
+						},
 					},
 				},
 			},
@@ -54,11 +56,13 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						APIVersion: "eventing.triggermesh.io/v1alpha1",
-						Kind:       "RedisBroker",
-						Name:       tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							APIVersion: "eventing.triggermesh.io/v1alpha1",
+							Kind:       "RedisBroker",
+							Name:       tBrokerName,
+						},
 					},
 				},
 			},
@@ -70,11 +74,13 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						APIVersion: "eventing.triggermesh.io/v1alpha2",
-						Kind:       "RedisBroker",
-						Name:       tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							APIVersion: "eventing.triggermesh.io/v1alpha2",
+							Kind:       "RedisBroker",
+							Name:       tBrokerName,
+						},
 					},
 				},
 			},
@@ -86,11 +92,13 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						APIVersion: "test.triggermesh.io/v1alpha1",
-						Kind:       "RedisBroker",
-						Name:       tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							APIVersion: "test.triggermesh.io/v1alpha1",
+							Kind:       "RedisBroker",
+							Name:       tBrokerName,
+						},
 					},
 				},
 			},
@@ -102,11 +110,13 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						Group: "test.triggermesh.io",
-						Kind:  "RedisBroker",
-						Name:  tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							Group: "test.triggermesh.io",
+							Kind:  "RedisBroker",
+							Name:  tBrokerName,
+						},
 					},
 				},
 			},
@@ -118,10 +128,12 @@ func TestDoesTriggerRefBroker(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: tNamespace,
 				},
-				Spec: TriggerSpec{
-					Broker: duckv1.KReference{
-						Kind: "RedisBroker",
-						Name: tBrokerName,
+				Spec: TriggerSpecBounded{
+					TriggerSpec: TriggerSpec{
+						Broker: duckv1.KReference{
+							Kind: "RedisBroker",
+							Name: tBrokerName,
+						},
 					},
 				},
 			},

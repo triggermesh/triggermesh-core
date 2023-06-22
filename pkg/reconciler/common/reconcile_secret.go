@@ -32,6 +32,8 @@ import (
 const (
 	ConfigSecretKey      = "config"
 	secretResourceSuffix = "config"
+
+	replayPrefix = "replay."
 )
 
 type SecretReconciler interface {
@@ -132,7 +134,6 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 
 	cfg := &broker.Config{
 		Triggers: make(map[string]broker.Trigger),
-		Replays:  make(map[string]broker.Replay),
 	}
 	for _, t := range triggers {
 		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
@@ -181,6 +182,21 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 			},
 		}
 
+		if t.Spec.Bounds != nil {
+			trg.Bounds = &broker.Bounds{}
+			if t.Spec.Bounds.ById != nil {
+				// This is wrong, can be empty.
+				trg.Bounds.EndDID = *t.Spec.Bounds.ById.Start
+				trg.Bounds.StartID = *t.Spec.Bounds.ById.End
+			}
+			if t.Spec.Bounds.ByDate != nil {
+				// This is wrong, can be empty.
+				// TODO this needs to be implemented at brokers
+				// trg.Bounds.EndDate = *t.Spec.Bounds.ByDate.Start
+				// trg.Bounds.StartDate = *t.Spec.Bounds.ByDate.End
+			}
+		}
+
 		// Add Trigger data to config
 		cfg.Triggers[t.Name] = trg
 	}
@@ -219,18 +235,31 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 			}
 		}
 
-		rpl := broker.Replay{
-			StartDate: t.Spec.StartDate,
-			EndDate:   t.Spec.EndDate,
-			Filters:   t.Spec.Filters,
+		trg := broker.Trigger{
+			// StartDate: t.Spec.StartDate,
+			// EndDate:   t.Spec.EndDate,
+			Filters: t.Spec.Filters,
 			Target: broker.Target{
 				URL:             &targetURI,
 				DeliveryOptions: do,
 			},
+			Bounds: &broker.Bounds{},
+		}
+
+		if t.Spec.Bounds.ById != nil {
+			// This is wrong, can be empty.
+			trg.Bounds.EndDID = *t.Spec.Bounds.ById.Start
+			trg.Bounds.StartID = *t.Spec.Bounds.ById.End
+		}
+		if t.Spec.Bounds.ByDate != nil {
+			// This is wrong, can be empty.
+			// TODO this needs to be implemented at brokers
+			// trg.Bounds.EndDate = *t.Spec.Bounds.ByDate.Start
+			// trg.Bounds.StartDate = *t.Spec.Bounds.ByDate.End
 		}
 
 		// Add Replay data to config
-		cfg.Replays[t.Name] = rpl
+		cfg.Triggers[replayPrefix+t.Name] = trg
 	}
 
 	// TODO add user/password

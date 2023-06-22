@@ -11,8 +11,6 @@ import (
 	"knative.dev/pkg/apis"
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
-
-	"github.com/triggermesh/brokers/pkg/config/broker"
 )
 
 // +genclient
@@ -45,37 +43,10 @@ var (
 
 // ReplaySpec defines the desired state of Replay
 type ReplaySpec struct {
-	// Broker is the broker that this replay receives events from.
-	Broker duckv1.KReference `json:"broker,omitempty"`
+	TriggerSpec `json:",inline"`
 
-	// TODO
-	// Filters is an experimental field that conforms to the CNCF CloudEvents Subscriptions
-	// API. It's an array of filter expressions that evaluate to true or false.
-	// If any filter expression in the array evaluates to false, the event MUST
-	// NOT be sent to the target. If all the filter expressions in the array
-	// evaluate to true, the event MUST be attempted to be delivered. Absence of
-	// a filter or empty array implies a value of true. In the event of users
-	// specifying both Filter and Filters, then the latter will override the former.
-	// This will allow users to try out the effect of the new Filters field
-	// without compromising the existing attribute-based Filter and try it out on existing
-	// Trigger objects.
-	//
-	// +optional
-	Filters []broker.Filter `json:"filters,omitempty"`
-
-	// Target is the addressable that receives events from the Broker that pass
-	// the Filter. It is required.
-	Target duckv1.Destination `json:"target,omitempty"`
-
-	// StartDate is the time from which the replay should start.
-	StartDate string `json:"startDate,omitempty"`
-
-	// EndDate is the time at which the replay should end.
-	EndDate string `json:"endDate,omitempty"`
-
-	// Delivery contains the delivery spec for this specific replay.
-	// +optional
-	Delivery *eventingduckv1.DeliverySpec `json:"delivery,omitempty"`
+	// Bounds for the receiving events
+	Bounds TriggerBounds `json:",omitempty"`
 }
 
 // ReplayStatus represents the current state of a Replay.

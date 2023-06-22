@@ -27,7 +27,7 @@ type Trigger struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec defines the desired state of the Trigger.
-	Spec TriggerSpec `json:"spec,omitempty"`
+	Spec TriggerSpecBounded `json:"spec,omitempty"`
 
 	// Status represents the current state of the Trigger. This data may be out of
 	// date.
@@ -70,6 +70,35 @@ type TriggerSpec struct {
 	// Delivery contains the delivery spec for this specific trigger.
 	// +optional
 	Delivery *eventingduckv1.DeliverySpec `json:"delivery,omitempty"`
+}
+
+type TriggerSpecBounded struct {
+	TriggerSpec `json:",inline"`
+
+	// Bounds for the receiving events
+	Bounds *TriggerBounds `json:"bounds,omitempty"`
+}
+
+// TriggerBounds set the policy for the event offsets we are interested in receiving.
+type TriggerBounds struct {
+	// TriggerBoundsByID set offsets policy by backing broker ID.
+	ById *TriggerBoundsByID `json:"byID,omitempty"`
+	// TriggerBoundsByID set offsets policy by date.
+	ByDate *TriggerBoundsByDate `json:"byDate,omitempty"`
+}
+
+type TriggerBoundsByID struct {
+	// Starting offset.
+	Start *string `json:"start,omitempty"`
+	// Ending offset.
+	End *string `json:"end,omitempty"`
+}
+
+type TriggerBoundsByDate struct {
+	// Starting date.
+	Start *string `json:"start,omitempty"`
+	// Ending date.
+	End *string `json:"end,omitempty"`
 }
 
 // TriggerStatus represents the current state of a Trigger.
