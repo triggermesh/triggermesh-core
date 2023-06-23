@@ -238,8 +238,6 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 		}
 
 		trg := broker.Trigger{
-			// StartDate: t.Spec.StartDate,
-			// EndDate:   t.Spec.EndDate,
 			Filters: t.Spec.Filters,
 			Target: broker.Target{
 				URL:             &targetURI,
