@@ -82,7 +82,7 @@ type TriggerSpecBounded struct {
 // TriggerBounds set the policy for the event offsets we are interested in receiving.
 type TriggerBounds struct {
 	// TriggerBoundsByID set offsets policy by backing broker ID.
-	ById *TriggerBoundsByID `json:"byID,omitempty"`
+	ById *TriggerBoundsByID `json:"byId,omitempty"`
 	// TriggerBoundsByID set offsets policy by date.
 	ByDate *TriggerBoundsByDate `json:"byDate,omitempty"`
 }

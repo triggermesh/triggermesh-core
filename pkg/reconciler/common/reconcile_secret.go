@@ -183,17 +183,19 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 		}
 
 		if t.Spec.Bounds != nil {
-			trg.Bounds = &broker.Bounds{}
-			if t.Spec.Bounds.ById != nil {
-				// This is wrong, can be empty.
-				trg.Bounds.EndDID = *t.Spec.Bounds.ById.Start
-				trg.Bounds.StartID = *t.Spec.Bounds.ById.End
-			}
+			trg.Bounds = &broker.TriggerBounds{}
 			if t.Spec.Bounds.ByDate != nil {
-				// This is wrong, can be empty.
-				// TODO this needs to be implemented at brokers
-				// trg.Bounds.EndDate = *t.Spec.Bounds.ByDate.Start
-				// trg.Bounds.StartDate = *t.Spec.Bounds.ByDate.End
+				trg.Bounds.ByDate = &broker.Bounds{
+					Start: t.Spec.Bounds.ByDate.Start,
+					End:   t.Spec.Bounds.ByDate.End,
+				}
+			}
+
+			if t.Spec.Bounds.ById != nil {
+				trg.Bounds.ByID = &broker.Bounds{
+					Start: t.Spec.Bounds.ById.Start,
+					End:   t.Spec.Bounds.ById.End,
+				}
 			}
 		}
 
@@ -243,20 +245,25 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 				URL:             &targetURI,
 				DeliveryOptions: do,
 			},
-			Bounds: &broker.Bounds{},
+			Bounds: &broker.TriggerBounds{},
+		}
+
+		if t.Spec.Bounds.ByDate != nil {
+			trg.Bounds.ByDate = &broker.Bounds{
+				Start: t.Spec.Bounds.ByDate.Start,
+				End:   t.Spec.Bounds.ByDate.End,
+			}
 		}
 
 		if t.Spec.Bounds.ById != nil {
-			// This is wrong, can be empty.
-			trg.Bounds.EndDID = *t.Spec.Bounds.ById.Start
-			trg.Bounds.StartID = *t.Spec.Bounds.ById.End
+			trg.Bounds.ByID = &broker.Bounds{
+				Start: t.Spec.Bounds.ById.Start,
+				End:   t.Spec.Bounds.ById.End,
+			}
 		}
-		if t.Spec.Bounds.ByDate != nil {
-			// This is wrong, can be empty.
-			// TODO this needs to be implemented at brokers
-			// trg.Bounds.EndDate = *t.Spec.Bounds.ByDate.Start
-			// trg.Bounds.StartDate = *t.Spec.Bounds.ByDate.End
-		}
+
+		// Add Trigger data to config
+		cfg.Triggers[t.Name] = trg
 
 		// Add Replay data to config
 		cfg.Triggers[replayPrefix+t.Name] = trg
