@@ -27,7 +27,6 @@ import (
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
-	rplinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/replay"
 	trginformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/trigger"
 
 	rbreconciler "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/reconciler/eventing/v1alpha1/redisbroker"
@@ -58,7 +57,6 @@ func NewController(
 
 	rbInformer := rbinformer.Get(ctx)
 	trgInformer := trginformer.Get(ctx)
-	rplInformer := rplinformer.Get(ctx)
 	secretInformer := secret.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
@@ -69,7 +67,7 @@ func NewController(
 	_ = rolebindingsinformer.Get(ctx)
 
 	r := &reconciler{
-		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister(), rplInformer.Lister()),
+		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
 		saReconciler:     common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
 		brokerReconciler: common.NewBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), endpointsInformer.Lister(),
 			env.BrokerImage, corev1.PullPolicy(env.BrokerImagePullPolicy)),
@@ -173,51 +171,9 @@ func NewController(
 		})
 	}
 
-	// Filter Replays that reference a Redis broker.
-	filterReplayForRedisBroker := func(obj interface{}) bool {
-		t, ok := obj.(*eventingv1alpha1.Replay)
-		if !ok {
-			return false
-		}
-
-		// TODO replace with defaulting when webhook is implemented
-		if !(t.Spec.Broker.Group == gvk.Group || t.Spec.Broker.Group == "") ||
-			t.Spec.Broker.Kind != gvk.Kind {
-			return false
-		}
-
-		// TODO replace with broker namespace when webhook defaulting is implemented
-		_, err := rbInformer.Lister().RedisBrokers(t.Namespace).Get(t.Spec.Broker.Name)
-		switch {
-		case err == nil:
-			return true
-		case !apierrs.IsNotFound(err):
-			logging.FromContext(ctx).Error("Unable to get Redis Broker", zap.Any("broker", t.Spec.Broker), zap.Error(err))
-		}
-
-		return false
-	}
-
-	enqueueFromReplay := func(obj interface{}) {
-		r, ok := obj.(*eventingv1alpha1.Replay)
-		if !ok {
-			return
-		}
-
-		impl.EnqueueKey(types.NamespacedName{
-			Name:      r.Spec.Broker.Name,
-			Namespace: r.Namespace,
-		})
-	}
-
 	trgInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterTriggerForRedisBroker,
 		Handler:    controller.HandleAll(enqueueFromTrigger),
-	})
-
-	rplInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: filterReplayForRedisBroker,
-		Handler:    controller.HandleAll(enqueueFromReplay),
 	})
 
 	return impl

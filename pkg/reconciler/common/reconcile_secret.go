@@ -32,8 +32,6 @@ import (
 const (
 	ConfigSecretKey      = "config"
 	secretResourceSuffix = "config"
-
-	replayPrefix = "replay."
 )
 
 type SecretReconciler interface {
@@ -44,17 +42,15 @@ type secretReconciler struct {
 	client        kubernetes.Interface
 	secretLister  corev1listers.SecretLister
 	triggerLister eventingv1alpha1listers.TriggerLister
-	replayLister  eventingv1alpha1listers.ReplayLister
 }
 
 var _ SecretReconciler = (*secretReconciler)(nil)
 
-func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister, replayLister eventingv1alpha1listers.ReplayLister) SecretReconciler {
+func NewSecretReconciler(ctx context.Context, secretLister corev1listers.SecretLister, triggerLister eventingv1alpha1listers.TriggerLister) SecretReconciler {
 	return &secretReconciler{
 		client:        k8sclient.Get(ctx),
 		secretLister:  secretLister,
 		triggerLister: triggerLister,
-		replayLister:  replayLister,
 	}
 }
 
@@ -121,15 +117,6 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedTriggerList,
 			"Failed to list triggers: %w", err)
-	}
-
-	replays, err := r.replayLister.Replays(ns).List(labels.Everything())
-	if err != nil {
-		logging.FromContext(ctx).Error("Unable to list replays at namespace", zap.Error(err))
-		rb.GetReconcilableBrokerStatus().MarkConfigSecretFailed(ReasonFailedReplayList, "Failed to list replays")
-
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedReplayList,
-			"Failed to list replays: %w", err)
 	}
 
 	cfg := &broker.Config{
@@ -201,70 +188,6 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 
 		// Add Trigger data to config
 		cfg.Triggers[t.Name] = trg
-	}
-
-	for _, t := range replays {
-		// Generate secret even if the replays is not ready, as long as one of the URIs for target
-		// or DLS exist.
-		if !t.ReferencesBroker(rb) || (t.Status.TargetURI == nil) {
-			continue
-		}
-
-		targetURI := ""
-		if t.Status.TargetURI != nil {
-			targetURI = t.Status.TargetURI.String()
-		} else {
-			// Configure empty URL so that all requests go to DLS when the target is
-			// not ready.
-			targetURI = ""
-		}
-
-		do := &broker.DeliveryOptions{}
-		if t.Spec.Delivery != nil {
-			do.Retry = t.Spec.Delivery.Retry
-			do.BackoffDelay = t.Spec.Delivery.BackoffDelay
-
-			if t.Spec.Delivery.BackoffPolicy != nil {
-				var bop broker.BackoffPolicyType
-				switch *t.Spec.Delivery.BackoffPolicy {
-				case duckv1.BackoffPolicyLinear:
-					bop = broker.BackoffPolicyLinear
-
-				case duckv1.BackoffPolicyExponential:
-					bop = broker.BackoffPolicyLinear
-				}
-				do.BackoffPolicy = &bop
-			}
-		}
-
-		trg := broker.Trigger{
-			Filters: t.Spec.Filters,
-			Target: broker.Target{
-				URL:             &targetURI,
-				DeliveryOptions: do,
-			},
-			Bounds: &broker.TriggerBounds{},
-		}
-
-		if t.Spec.Bounds.ByDate != nil {
-			trg.Bounds.ByDate = &broker.Bounds{
-				Start: t.Spec.Bounds.ByDate.Start,
-				End:   t.Spec.Bounds.ByDate.End,
-			}
-		}
-
-		if t.Spec.Bounds.ById != nil {
-			trg.Bounds.ByID = &broker.Bounds{
-				Start: t.Spec.Bounds.ById.Start,
-				End:   t.Spec.Bounds.ById.End,
-			}
-		}
-
-		// Add Trigger data to config
-		cfg.Triggers[t.Name] = trg
-
-		// Add Replay data to config
-		cfg.Triggers[replayPrefix+t.Name] = trg
 	}
 
 	// TODO add user/password

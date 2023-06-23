@@ -135,7 +135,7 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 		return err
 	}
 
-	// Iterate triggers and replays and create secret.
+	// Iterate triggers and create secret.
 	secret, err := r.secretReconciler.Reconcile(ctx, rb)
 	if err != nil {
 		return err

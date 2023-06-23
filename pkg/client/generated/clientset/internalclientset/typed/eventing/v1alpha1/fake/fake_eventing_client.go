@@ -22,10 +22,6 @@ func (c *FakeEventingV1alpha1) RedisBrokers(namespace string) v1alpha1.RedisBrok
 	return &FakeRedisBrokers{c, namespace}
 }
 
-func (c *FakeEventingV1alpha1) Replays(namespace string) v1alpha1.ReplayInterface {
-	return &FakeReplays{c, namespace}
-}
-
 func (c *FakeEventingV1alpha1) Triggers(namespace string) v1alpha1.TriggerInterface {
 	return &FakeTriggers{c, namespace}
 }

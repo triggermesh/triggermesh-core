@@ -43,8 +43,6 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().MemoryBrokers().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("redisbrokers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().RedisBrokers().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("replays"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().Replays().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("triggers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Eventing().V1alpha1().Triggers().Informer()}, nil
 

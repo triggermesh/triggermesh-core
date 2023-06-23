@@ -28,7 +28,6 @@ const (
 	ReasonFailedServiceUpdate = "FailedServiceUpdate"
 
 	ReasonFailedTriggerList     = "FailedTriggerList"
-	ReasonFailedReplayList      = "FailedReplayList"
 	ReasonFailedConfigSerialize = "FailedConfigSerialize"
 
 	ReasonUnavailableEndpoints = "UnavailableEndpoints"

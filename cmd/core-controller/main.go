@@ -12,7 +12,6 @@ import (
 
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/memorybroker"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/redisbroker"
-	"github.com/triggermesh/triggermesh-core/pkg/reconciler/replay"
 	"github.com/triggermesh/triggermesh-core/pkg/reconciler/trigger"
 )
 
@@ -32,6 +31,5 @@ func main() {
 		memorybroker.NewController,
 		redisbroker.NewController,
 		trigger.NewController,
-		replay.NewController,
 	)
 }

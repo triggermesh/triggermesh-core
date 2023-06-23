@@ -150,7 +150,3 @@ func (l *Listers) GetTriggerLister() eventinglistersv1alpha1.TriggerLister {
 	return eventinglistersv1alpha1.NewTriggerLister(l.IndexerFor(&eventingv1alpha1.Trigger{}))
 }
 
-// GetReplayLister returns a Lister for Replay objects.
-func (l *Listers) GetReplayLister() eventinglistersv1alpha1.ReplayLister {
-	return eventinglistersv1alpha1.NewReplayLister(l.IndexerFor(&eventingv1alpha1.Replay{}))
-}
