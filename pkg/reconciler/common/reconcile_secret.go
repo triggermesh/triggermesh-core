@@ -169,6 +169,23 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 			},
 		}
 
+		if t.Spec.Bounds != nil {
+			trg.Bounds = &broker.TriggerBounds{}
+			if t.Spec.Bounds.ByDate != nil {
+				trg.Bounds.ByDate = &broker.Bounds{
+					Start: t.Spec.Bounds.ByDate.Start,
+					End:   t.Spec.Bounds.ByDate.End,
+				}
+			}
+
+			if t.Spec.Bounds.ById != nil {
+				trg.Bounds.ByID = &broker.Bounds{
+					Start: t.Spec.Bounds.ById.Start,
+					End:   t.Spec.Bounds.ById.End,
+				}
+			}
+		}
+
 		// Add Trigger data to config
 		cfg.Triggers[t.Name] = trg
 	}

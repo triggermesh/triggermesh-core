@@ -1,0 +1,32 @@
+apiVersion: eventing.triggermesh.io/v1alpha1
+kind: Trigger
+metadata:
+  name: rdemo-replay-1
+spec:
+  broker:
+    kind: RedisBroker
+    group: eventing.triggermesh.io
+    name: demo
+  filters:
+  - any:
+    - exact:
+        type: demo.type1
+  target:
+    ref:
+      apiVersion: v1
+      kind: Service
+      name: display-target
+
+  delivery:
+    retry: 3
+    deadLetterSink:
+      ref:
+        kind: Service
+        apiVersion: v1
+        name: display-deadlettersink
+
+  bounds:
+    byDate:
+      start: 2023-06-23T10:00:00Z
+      end: 2023-06-23T22:00:00Z
+

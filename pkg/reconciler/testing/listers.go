@@ -149,3 +149,4 @@ func (l *Listers) GetRedisBrokerLister() eventinglistersv1alpha1.RedisBrokerList
 func (l *Listers) GetTriggerLister() eventinglistersv1alpha1.TriggerLister {
 	return eventinglistersv1alpha1.NewTriggerLister(l.IndexerFor(&eventingv1alpha1.Trigger{}))
 }
+

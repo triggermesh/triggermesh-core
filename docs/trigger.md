@@ -38,12 +38,20 @@ spec:
         name: <name of the DLS object>
       uri: <URI to the event DLS HTTP endpoint>
   filters: <Filter specification. See 'Filtering Events' section in this doc>
+  bounds: <Event offsets that this trigger should be retrieving>
+    byId: <Offsets defined by the broker's backend event identifiers>
+      start: <Starting offset>
+      end: <Ending offset>
+    byDate: <Offsets defined by timestamps formatted as RFC3339>
+      start: <Starting offset>
+      end: <Ending offset>
 ```
 
 - `spec.broker` must be a running broker that will be configured with this Trigger's configuration.
 - `spec.target` must refer to an endpoint that will receive events from the Broker. When the event consumer is a Kubernetes object it is prefered to use the `spec.target.ref` structure.
 - `spec.delivery` contains the logic to apply when an event cannot be delivered from the Broker to a Target, performing a number of retries, and finally sending to a dead letter sink if none of them succeed. Duration format for `spec.
-- `spec.filters` contain a set of filter expresions. See the [Filtering Events section](#filtering-events)
+- `spec.filters` contains a set of filter expresions. See the [Filtering Events section](#filtering-events)
+- `spec.bounds` contains optional start and end offsets for the event that the Trigger is intereseted in receiving. When using dates, [RFC3339 format](https://utcc.utoronto.ca/~cks/space/blog/unix/GNUDateAndRFC3339) should be used.
 
 ## Filtering Events
 
