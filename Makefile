@@ -23,6 +23,7 @@ DIST_DIR          ?= $(OUTPUT_DIR)
 KO                ?= ko
 KOFLAGS           ?=
 IMAGE_TAG         ?= $(shell git rev-parse HEAD)
+BROKERS_IMAGE_TAG ?= $(IMAGE_TAG)
 
 # Go build variables
 GO                ?= go
@@ -96,6 +97,10 @@ ifeq ($(shell echo ${IMAGE_TAG} | egrep "${TAG_REGEX}"),${IMAGE_TAG})
 	$(KO) resolve $(KOFLAGS) -B -t latest -f config/ -l '!triggermesh.io/crd-install' > /dev/null
 endif
 	$(KO) resolve $(KOFLAGS) -B -t $(IMAGE_TAG) --tag-only -f config/ -l '!triggermesh.io/crd-install' >> $(DIST_DIR)/triggermesh-core.yaml
+
+	# Update broker image references.
+	sed -i 's/memory-broker:latest/memory-broker:$(BROKERS_IMAGE_TAG)/g' $(DIST_DIR)/triggermesh-core.yaml
+	sed -i 's/redis-broker:latest/redis-broker:$(BROKERS_IMAGE_TAG)/g' $(DIST_DIR)/triggermesh-core.yaml
 
 gen-apidocs: ## Generate API docs
 	GOPATH="" OUTPUT_DIR=$(DOCS_OUTPUT_DIR) ./hack/gen-api-reference-docs.sh
