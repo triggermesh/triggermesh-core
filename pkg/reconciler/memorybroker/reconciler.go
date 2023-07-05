@@ -54,12 +54,6 @@ func (r *reconciler) ReconcileKind(ctx context.Context, mb *eventingv1alpha1.Mem
 		return err
 	}
 
-	// Create configMap.
-	configMap, err := r.configMapReconciler.Reconcile(ctx, mb)
-	if err != nil {
-		return err
-	}
-
 	// Make sure the Broker service account and roles exists.
 	sa, _, err := r.saReconciler.Reconcile(ctx, mb)
 	if err != nil {
@@ -67,7 +61,7 @@ func (r *reconciler) ReconcileKind(ctx context.Context, mb *eventingv1alpha1.Mem
 	}
 
 	// Make sure the Broker deployment exists.
-	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, mb, sa, secret, configMap, memoryDeploymentOption(mb))
+	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, mb, sa, secret, nil, memoryDeploymentOption(mb))
 	if err != nil {
 		return err
 	}
