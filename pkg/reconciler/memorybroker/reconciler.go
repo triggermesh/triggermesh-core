@@ -22,10 +22,9 @@ import (
 )
 
 type reconciler struct {
-	secretReconciler    common.SecretReconciler
-	configMapReconciler common.ConfigMapReconciler
-	saReconciler        common.ServiceAccountReconciler
-	brokerReconciler    common.BrokerReconciler
+	secretReconciler common.SecretReconciler
+	saReconciler     common.ServiceAccountReconciler
+	brokerReconciler common.BrokerReconciler
 }
 
 // options that set Broker environment variables specific for the MemoryBroker.
