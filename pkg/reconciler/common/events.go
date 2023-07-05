@@ -16,6 +16,11 @@ const (
 	ReasonFailedSecretCreate  = "FailedSecretCreate"
 	ReasonFailedSecretUpdate  = "FailedSecretUpdate"
 
+	ReasonFailedConfigMapCompose = "FailedConfigMapCompose"
+	ReasonFailedConfigMapGet     = "FailedConfigMapGet"
+	ReasonFailedConfigMapCreate  = "FailedConfigMapCreate"
+	ReasonFailedConfigMapUpdate  = "FailedConfigMapUpdate"
+
 	ReasonFailedServiceAccountGet    = "FailedServiceAccountGet"
 	ReasonFailedServiceAccountCreate = "FailedServiceAccountCreate"
 	ReasonFailedRoleBindingGet       = "FailedRoleBindingGet"

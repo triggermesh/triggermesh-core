@@ -40,7 +40,7 @@ const (
 )
 
 type BrokerReconciler interface {
-	Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, do ...resources.DeploymentOption) (*appsv1.Deployment, *corev1.Service, error)
+	Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, configMap *corev1.ConfigMap, do ...resources.DeploymentOption) (*appsv1.Deployment, *corev1.Service, error)
 }
 
 type brokerReconciler struct {
@@ -70,8 +70,8 @@ func NewBrokerReconciler(ctx context.Context,
 	}
 }
 
-func (r *brokerReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, deploymentOptions ...resources.DeploymentOption) (*appsv1.Deployment, *corev1.Service, error) {
-	d, err := r.reconcileDeployment(ctx, rb, sa, secret, deploymentOptions)
+func (r *brokerReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, configMap *corev1.ConfigMap, deploymentOptions ...resources.DeploymentOption) (*appsv1.Deployment, *corev1.Service, error) {
+	d, err := r.reconcileDeployment(ctx, rb, sa, secret, configMap, deploymentOptions)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +89,7 @@ func (r *brokerReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.Re
 	return d, svc, nil
 }
 
-func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, image string, pullPolicy corev1.PullPolicy, extraOptions ...resources.DeploymentOption) *appsv1.Deployment {
+func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, configMap *corev1.ConfigMap, image string, pullPolicy corev1.PullPolicy, extraOptions ...resources.DeploymentOption) *appsv1.Deployment {
 	meta := rb.GetObjectMeta()
 	ns, name := meta.GetNamespace(), meta.GetName()
 	bs := rb.GetReconcilableBrokerSpec()
@@ -101,6 +101,7 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", ConfigSecretKey),
+		resources.ContainerAddEnvFromValue("KUBERNETES_STATUS_CONFIGMAP", configMap.Name),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 		resources.ContainerAddPort("httpce", brokerContainerPort),
 		resources.ContainerAddPort("metrics", metricsServicePort),
@@ -147,8 +148,9 @@ func (r *brokerReconciler) reconcileDeployment(
 	rb eventingv1alpha1.ReconcilableBroker,
 	sa *corev1.ServiceAccount,
 	secret *corev1.Secret,
+	configMap *corev1.ConfigMap,
 	deploymentOptions []resources.DeploymentOption) (*appsv1.Deployment, error) {
-	desired := buildBrokerDeployment(rb, sa, secret, r.image, r.pullPolicy, deploymentOptions...)
+	desired := buildBrokerDeployment(rb, sa, secret, configMap, r.image, r.pullPolicy, deploymentOptions...)
 	current, err := r.deploymentLister.Deployments(desired.Namespace).Get(desired.Name)
 
 	switch {

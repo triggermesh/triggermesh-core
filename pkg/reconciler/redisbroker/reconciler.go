@@ -28,9 +28,10 @@ const (
 )
 
 type reconciler struct {
-	secretReconciler common.SecretReconciler
-	saReconciler     common.ServiceAccountReconciler
-	brokerReconciler common.BrokerReconciler
+	secretReconciler    common.SecretReconciler
+	configMapReconciler common.ConfigMapReconciler
+	saReconciler        common.ServiceAccountReconciler
+	brokerReconciler    common.BrokerReconciler
 
 	redisReconciler redisReconciler
 }
@@ -141,6 +142,12 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 		return err
 	}
 
+	// Create configMap.
+	configMap, err := r.configMapReconciler.Reconcile(ctx, rb)
+	if err != nil {
+		return err
+	}
+
 	// Make sure the Broker service account and roles exists.
 	sa, _, err := r.saReconciler.Reconcile(ctx, rb)
 	if err != nil {
@@ -148,7 +155,7 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 	}
 
 	// Make sure the Broker deployment exists and that it points to the Redis service.
-	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, rb, sa, secret, redisDeploymentOption(rb, redisSvc))
+	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, rb, sa, secret, configMap, redisDeploymentOption(rb, redisSvc))
 	if err != nil {
 		return err
 	}

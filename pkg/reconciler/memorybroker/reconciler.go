@@ -60,7 +60,7 @@ func (r *reconciler) ReconcileKind(ctx context.Context, mb *eventingv1alpha1.Mem
 	}
 
 	// Make sure the Broker deployment exists.
-	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, mb, sa, secret, memoryDeploymentOption(mb))
+	_, brokerSvc, err := r.brokerReconciler.Reconcile(ctx, mb, sa, secret, nil, memoryDeploymentOption(mb))
 	if err != nil {
 		return err
 	}

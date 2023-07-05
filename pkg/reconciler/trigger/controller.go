@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.uber.org/zap"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -15,6 +17,8 @@ import (
 	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/resolver"
+
+	cfgInformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	mbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/memorybroker"
@@ -32,6 +36,7 @@ func NewController(
 	tgInformer := tginformer.Get(ctx)
 	rbInformer := rbinformer.Get(ctx)
 	mbInformer := mbinformer.Get(ctx)
+	configMapInformer := cfgInformer.Get(ctx)
 
 	r := &Reconciler{
 		rbLister: rbInformer.Lister(),
@@ -104,6 +109,86 @@ func NewController(
 		}
 	}
 
+	filterConfigMapBroker := func(obj interface{}) bool {
+		// TODO duck
+		cm, ok := obj.(*corev1.ConfigMap)
+		if !ok {
+			return false
+		}
+
+		// Getting the list of owner references
+		owners := cm.GetOwnerReferences()
+		for _, owner := range owners {
+			if owner.Kind != "RedisBroker" {
+				continue
+			}
+
+			// Get the RedisBroker
+			rb, err := r.rbLister.RedisBrokers(cm.Namespace).Get(owner.Name)
+			if err != nil {
+				logging.FromContext(ctx).Error("Unable to get RedisBroker", zap.Error(err))
+				return false
+			}
+			brokerAccessor := kmeta.OwnerRefableAccessor(rb)
+
+			// Get the list of Triggers
+			tgl, err := tgInformer.Lister().Triggers(brokerAccessor.GetNamespace()).List(labels.Everything())
+			if err != nil {
+				logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
+				return false
+			}
+
+			for _, tg := range tgl {
+				if tg.ReferencesBroker(brokerAccessor) {
+					return true
+				}
+			}
+		}
+
+		return false
+	}
+
+	enqueueFromConfigMapBroker := func(obj interface{}) {
+		// TODO duck
+		cm, ok := obj.(*corev1.ConfigMap)
+		if !ok {
+			return
+		}
+
+		// Getting the list of owner references
+		owners := cm.GetOwnerReferences()
+		for _, owner := range owners {
+			if owner.Kind != "RedisBroker" {
+				continue
+			}
+
+			// Get the RedisBroker
+			rb, err := r.rbLister.RedisBrokers(cm.Namespace).Get(owner.Name)
+			if err != nil {
+				logging.FromContext(ctx).Error("Unable to get RedisBroker", zap.Error(err))
+				return
+			}
+			brokerAccessor := kmeta.OwnerRefableAccessor(rb)
+
+			// Get the list of Triggers
+			tgl, err := tgInformer.Lister().Triggers(brokerAccessor.GetNamespace()).List(labels.Everything())
+			if err != nil {
+				logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
+				return
+			}
+
+			// For each trigger, enqueue
+			for _, tg := range tgl {
+				if tg.ReferencesBroker(brokerAccessor) {
+					impl.EnqueueKey(types.NamespacedName{
+						Name:      tg.Name,
+						Namespace: tg.Namespace,
+					})
+				}
+			}
+		}
+	}
+
 	rbInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterBroker,
 		Handler:    controller.HandleAll(enqueueFromBroker),
@@ -112,6 +197,11 @@ func NewController(
 	mbInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterBroker,
 		Handler:    controller.HandleAll(enqueueFromBroker),
+	})
+
+	configMapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+		FilterFunc: filterConfigMapBroker,
+		Handler:    controller.HandleAll(enqueueFromConfigMapBroker),
 	})
 
 	return impl
