@@ -110,6 +110,11 @@ func (l *Listers) GetSecretLister() corev1listers.SecretLister {
 	return corev1listers.NewSecretLister(l.IndexerFor(&corev1.Secret{}))
 }
 
+// GetConfigMapLister returns a lister for ConfigMap objects.
+func (l *Listers) GetConfigMapLister() corev1listers.ConfigMapLister {
+	return corev1listers.NewConfigMapLister(l.IndexerFor(&corev1.ConfigMap{}))
+}
+
 // GetPodLister returns a lister for Pod objects.
 func (l *Listers) GetPodLister() corev1listers.PodLister {
 	return corev1listers.NewPodLister(l.IndexerFor(&corev1.Pod{}))
@@ -149,4 +154,3 @@ func (l *Listers) GetRedisBrokerLister() eventinglistersv1alpha1.RedisBrokerList
 func (l *Listers) GetTriggerLister() eventinglistersv1alpha1.TriggerLister {
 	return eventinglistersv1alpha1.NewTriggerLister(l.IndexerFor(&eventingv1alpha1.Trigger{}))
 }
-
