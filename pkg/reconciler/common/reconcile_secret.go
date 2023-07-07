@@ -125,7 +125,7 @@ func (r *secretReconciler) buildConfigSecret(ctx context.Context, rb eventingv1a
 	for _, t := range triggers {
 		// Generate secret even if the trigger is not ready, as long as one of the URIs for target
 		// or DLS exist.
-		if !t.ReferencesBroker(rb) || (t.Status.TargetURI == nil && t.Status.DeadLetterSinkURI == nil) {
+		if !t.OwnerRefableMatchesBroker(rb) || (t.Status.TargetURI == nil && t.Status.DeadLetterSinkURI == nil) {
 			continue
 		}
 

@@ -20,6 +20,7 @@ import (
 
 	cfgInformer "knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 
+	"github.com/triggermesh/triggermesh-core/pkg/apis/eventing"
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	mbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/memorybroker"
 	rbinformer "github.com/triggermesh/triggermesh-core/pkg/client/generated/injection/informers/eventing/v1alpha1/redisbroker"
@@ -71,7 +72,7 @@ func NewController(
 		}
 
 		for _, tg := range tgl {
-			if tg.ReferencesBroker(accessor) {
+			if tg.OwnerRefableMatchesBroker(accessor) {
 				return true
 			}
 		}
@@ -100,7 +101,7 @@ func NewController(
 		}
 
 		for _, tg := range tgl {
-			if tg.ReferencesBroker(accessor) {
+			if tg.OwnerRefableMatchesBroker(accessor) {
 				impl.EnqueueKey(types.NamespacedName{
 					Name:      tg.Name,
 					Namespace: tg.Namespace,
@@ -110,80 +111,71 @@ func NewController(
 	}
 
 	filterConfigMapBroker := func(obj interface{}) bool {
-		// TODO duck
 		cm, ok := obj.(*corev1.ConfigMap)
 		if !ok {
 			return false
 		}
 
-		// Getting the list of owner references
-		owners := cm.GetOwnerReferences()
-		for _, owner := range owners {
-			if owner.Kind != "RedisBroker" {
-				continue
-			}
+		// Get the list of owner references and filter for those that
+		// are owned by a Broker.
+		obs := eventing.GetOwnerBrokers(cm)
+		if len(obs) == 0 {
+			return false
+		}
 
-			// Get the RedisBroker
-			rb, err := r.rbLister.RedisBrokers(cm.Namespace).Get(owner.Name)
-			if err != nil {
-				logging.FromContext(ctx).Error("Unable to get RedisBroker", zap.Error(err))
-				return false
-			}
-			brokerAccessor := kmeta.OwnerRefableAccessor(rb)
+		// Iterate all triggers at the namespace and select those that are applied
+		// to the ConfigMap broker(s).
+		tgs, err := tgInformer.Lister().Triggers(cm.Namespace).List(labels.Everything())
+		if err != nil {
+			logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
+			return false
+		}
 
-			// Get the list of Triggers
-			tgl, err := tgInformer.Lister().Triggers(brokerAccessor.GetNamespace()).List(labels.Everything())
-			if err != nil {
-				logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
-				return false
-			}
-
-			for _, tg := range tgl {
-				if tg.ReferencesBroker(brokerAccessor) {
+		// Finding one will make the filter pass.
+		for i := range tgs {
+			for j := range obs {
+				if tgs[i].OwnerReferenceMatchesBroker(obs[j]) {
 					return true
 				}
 			}
 		}
 
+		// No triggers that match the brokers found, do not enqueue.
 		return false
 	}
 
 	enqueueFromConfigMapBroker := func(obj interface{}) {
-		// TODO duck
 		cm, ok := obj.(*corev1.ConfigMap)
 		if !ok {
 			return
 		}
 
-		// Getting the list of owner references
-		owners := cm.GetOwnerReferences()
-		for _, owner := range owners {
-			if owner.Kind != "RedisBroker" {
-				continue
-			}
+		// Get the list of owner references and filter for those that
+		// are owned by a Broker.
+		obs := eventing.GetOwnerBrokers(cm)
+		if len(obs) == 0 {
+			return
+		}
 
-			// Get the RedisBroker
-			rb, err := r.rbLister.RedisBrokers(cm.Namespace).Get(owner.Name)
-			if err != nil {
-				logging.FromContext(ctx).Error("Unable to get RedisBroker", zap.Error(err))
-				return
-			}
-			brokerAccessor := kmeta.OwnerRefableAccessor(rb)
+		// Iterate all triggers at the namespace and select those that are applied
+		// to the ConfigMap broker(s).
+		tgs, err := tgInformer.Lister().Triggers(cm.Namespace).List(labels.Everything())
+		if err != nil {
+			logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
+			return
+		}
 
-			// Get the list of Triggers
-			tgl, err := tgInformer.Lister().Triggers(brokerAccessor.GetNamespace()).List(labels.Everything())
-			if err != nil {
-				logging.FromContext(ctx).Error("Unable to list Triggers", zap.Error(err))
-				return
-			}
-
-			// For each trigger, enqueue
-			for _, tg := range tgl {
-				if tg.ReferencesBroker(brokerAccessor) {
+		// Iterate all triggers at the namespace and select those that are applied
+		// to the ConfigMap broker(s).
+		// Finding one will make the filter pass.
+		for i := range tgs {
+			for j := range obs {
+				if tgs[i].OwnerReferenceMatchesBroker(obs[j]) {
 					impl.EnqueueKey(types.NamespacedName{
-						Name:      tg.Name,
-						Namespace: tg.Namespace,
+						Name:      tgs[i].Name,
+						Namespace: tgs[i].Namespace,
 					})
+					break
 				}
 			}
 		}
