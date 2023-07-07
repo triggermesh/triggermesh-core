@@ -57,14 +57,19 @@ func (r *configMapReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1
 	)
 
 	_, err := r.configMapLister.ConfigMaps(desired.Namespace).Get(desired.Name)
-	if apierrs.IsNotFound(err) {
+	switch {
+	case err == nil:
+		// We only require the ConfigMap to exist, no action needed.
+
+	case apierrs.IsNotFound(err):
 		// The configMap has not been found, create it.
 		_, err = r.client.CoreV1().ConfigMaps(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
 			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedConfigMapCreate,
 				"Failed to create configMap for status reporting %s: %w", desired.Name, err)
 		}
-	} else if err != nil {
+
+	default:
 		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedConfigMapGet,
 			"Failed to get configMap for status reporting %s: %w", desired.Name, err)
 	}

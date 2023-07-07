@@ -136,13 +136,13 @@ func (r *reconciler) ReconcileKind(ctx context.Context, rb *eventingv1alpha1.Red
 		return err
 	}
 
-	// Iterate triggers and create secret.
+	// Iterate triggers and make sure the secret contains them.
 	secret, err := r.secretReconciler.Reconcile(ctx, rb)
 	if err != nil {
 		return err
 	}
 
-	// Create configMap.
+	// Make sure the ConfigMap exists.
 	configMap, err := r.configMapReconciler.Reconcile(ctx, rb)
 	if err != nil {
 		return err

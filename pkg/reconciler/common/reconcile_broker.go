@@ -110,8 +110,8 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 		copts = append(copts, resources.ContainerAddEnvFromValue("KUBERNETES_OBSERVABILITY_CONFIGMAP_NAME", bs.Observability.ValueFromConfigMap))
 	}
 
-	if configMap != nil && configMap.Name != "" {
-		copts = append(copts, resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIGMAP", configMap.Name))
+	if configMap != nil {
+		copts = append(copts, resources.ContainerAddEnvFromValue("KUBERNETES_STATUS_CONFIGMAP_NAME", configMap.Name))
 	}
 
 	dn := name + "-" + rb.GetOwnedObjectsSuffix() + "-" + brokerResourceSuffix

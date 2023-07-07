@@ -126,6 +126,7 @@ rules:
   - get
 
 # Read controller configurations
+# Create and read broker status ConfigMaps
 - apiGroups:
   - ''
   resources:
