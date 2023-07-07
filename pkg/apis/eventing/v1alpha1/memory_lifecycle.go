@@ -26,6 +26,7 @@ const (
 	MemoryBrokerBrokerServiceEndpointsConditionReady apis.ConditionType = "BrokerEndpointsReady"
 	MemoryBrokerConfigSecret                         apis.ConditionType = "BrokerConfigSecretReady"
 	MemoryBrokerConditionAddressable                 apis.ConditionType = "Addressable"
+	MemoryBrokerStatusConfig                         apis.ConditionType = "BrokerStatusConfigReady"
 )
 
 var memoryBrokerCondSet = apis.NewLivingConditionSet(
@@ -36,6 +37,7 @@ var memoryBrokerCondSet = apis.NewLivingConditionSet(
 	MemoryBrokerBrokerServiceEndpointsConditionReady,
 	MemoryBrokerConfigSecret,
 	MemoryBrokerConditionAddressable,
+	MemoryBrokerStatusConfig,
 )
 var memoryBrokerCondSetLock = sync.RWMutex{}
 
@@ -124,6 +126,18 @@ func (bs *MemoryBrokerStatus) MarkConfigSecretUnknown(reason, messageFormat stri
 
 func (bs *MemoryBrokerStatus) MarkConfigSecretReady() {
 	memoryBrokerCondSet.Manage(bs).MarkTrue(MemoryBrokerConfigSecret)
+}
+
+func (bs *MemoryBrokerStatus) MarkStatusConfigFailed(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkFalse(MemoryBrokerStatusConfig, reason, messageFormat, messageA...)
+}
+
+func (bs *MemoryBrokerStatus) MarkStatusConfigUnknown(reason, messageFormat string, messageA ...interface{}) {
+	redisBrokerCondSet.Manage(bs).MarkUnknown(MemoryBrokerStatusConfig, reason, messageFormat, messageA...)
+}
+
+func (bs *MemoryBrokerStatus) MarkStatusConfigReady() {
+	redisBrokerCondSet.Manage(bs).MarkTrue(MemoryBrokerStatusConfig)
 }
 
 // Manage Memory broker service account and role binding.
