@@ -89,7 +89,7 @@ func (r *brokerReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.Re
 	return d, svc, nil
 }
 
-func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, configMap *corev1.ConfigMap, image string, pullPolicy corev1.PullPolicy, extraOptions ...resources.DeploymentOption) *appsv1.Deployment {
+func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.ServiceAccount, secret *corev1.Secret, cm *corev1.ConfigMap, image string, pullPolicy corev1.PullPolicy, extraOptions ...resources.DeploymentOption) *appsv1.Deployment {
 	meta := rb.GetObjectMeta()
 	ns, name := meta.GetNamespace(), meta.GetName()
 	bs := rb.GetReconcilableBrokerSpec()
@@ -101,6 +101,7 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", ConfigSecretKey),
+		resources.ContainerAddEnvFromValue("KUBERNETES_STATUS_CONFIGMAP_NAME", cm.Name),
 		resources.ContainerWithImagePullPolicy(pullPolicy),
 		resources.ContainerAddPort("httpce", brokerContainerPort),
 		resources.ContainerAddPort("metrics", metricsServicePort),
@@ -108,10 +109,6 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 
 	if bs.Observability != nil && bs.Observability.ValueFromConfigMap != "" {
 		copts = append(copts, resources.ContainerAddEnvFromValue("KUBERNETES_OBSERVABILITY_CONFIGMAP_NAME", bs.Observability.ValueFromConfigMap))
-	}
-
-	if configMap != nil {
-		copts = append(copts, resources.ContainerAddEnvFromValue("KUBERNETES_STATUS_CONFIGMAP_NAME", configMap.Name))
 	}
 
 	dn := name + "-" + rb.GetOwnedObjectsSuffix() + "-" + brokerResourceSuffix

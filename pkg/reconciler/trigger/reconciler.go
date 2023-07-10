@@ -189,7 +189,7 @@ func (r *Reconciler) reconcileStatusConfigMap(ctx context.Context, t *eventingv1
 
 	_, ok := cm.Data[common.ConfigMapStatusKey]
 	if !ok {
-		errmsg := fmt.Sprintf("ConfigMap %q does not countain key %q", configMapName, common.ConfigMapStatusKey)
+		errmsg := fmt.Sprintf("ConfigMap %q does not contain key %q", configMapName, common.ConfigMapStatusKey)
 		t.Status.MarkStatusConfigMapFailed(common.ReasonFailedStatusConfigMapRead, errmsg)
 		// No need to requeue, we will be notified when the status ConfigMap is updated.
 		return controller.NewPermanentError(errors.New(errmsg))
