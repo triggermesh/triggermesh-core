@@ -5,6 +5,7 @@ package trigger
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,6 +17,8 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 	"knative.dev/pkg/resolver"
+
+	"github.com/triggermesh/brokers/pkg/status"
 
 	eventingv1alpha1 "github.com/triggermesh/triggermesh-core/pkg/apis/eventing/v1alpha1"
 	eventingv1alpha1listers "github.com/triggermesh/triggermesh-core/pkg/client/generated/listers/eventing/v1alpha1"
@@ -182,24 +185,75 @@ func (r *Reconciler) reconcileStatusConfigMap(ctx context.Context, t *eventingv1
 			return controller.NewPermanentError(err)
 		}
 
-		t.Status.MarkStatusConfigMapFailed(common.ReasonFailedStatusConfigMapGet, "Failed to get ConfigMap for broker %q : %s", configMapName, err)
-		return pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonFailedStatusConfigMapGet,
+		t.Status.MarkStatusConfigMapFailed(common.ReasonStatusConfigMapGetFailed, "Failed to get ConfigMap for broker %q : %s", configMapName, err)
+		return pkgreconciler.NewEvent(corev1.EventTypeWarning, common.ReasonStatusConfigMapGetFailed,
 			"Failed to get ConfigMap for broker %s: %w", configMapName, err)
 	}
 
-	_, ok := cm.Data[common.ConfigMapStatusKey]
+	cmst, ok := cm.Data[common.ConfigMapStatusKey]
 	if !ok {
 		errmsg := fmt.Sprintf("ConfigMap %q does not contain key %q", configMapName, common.ConfigMapStatusKey)
-		t.Status.MarkStatusConfigMapFailed(common.ReasonFailedStatusConfigMapRead, errmsg)
+		t.Status.MarkStatusConfigMapFailed(common.ReasonStatusConfigMapReadFailed, errmsg)
 		// No need to requeue, we will be notified when the status ConfigMap is updated.
 		return controller.NewPermanentError(errors.New(errmsg))
 	}
 
-	// TODO Read contents to status structure
-	// TODO Iterate all broker nodes at the status
-	// TODO Compose summary status for the trigger
+	sts := map[string]status.Status{}
+	if err := json.Unmarshal([]byte(cmst), &sts); err != nil {
+		errmsg := fmt.Sprintf("ConfigMap %s/%s could not be unmarshalled as a status: %v", configMapName, common.ConfigMapStatusKey, err)
+		t.Status.MarkStatusConfigMapFailed(common.ReasonStatusConfigMapReadFailed, errmsg)
+		// No need to requeue, we will be notified when the status ConfigMap is updated.
+		return controller.NewPermanentError(errors.New(errmsg))
+	}
 
-	t.Status.MarkStatusConfigMapSucceeded("TODO", "status parsing not implemented yet")
+	return r.summarizeStatus(t, sts)
+}
+
+func (r *Reconciler) summarizeStatus(t *eventingv1alpha1.Trigger, sts map[string]status.Status) pkgreconciler.Event {
+	// Iterate all nodes and take note of the status for this trigger
+	var temp status.SubscriptionStatusChoice
+	for instance, st := range sts {
+		subs, ok := st.Subscriptions[t.Name]
+		if !ok {
+			continue
+		}
+
+		switch subs.Status {
+		case status.SubscriptionStatusFailed:
+			// If one instance reports failure, consider the trigger failed.
+			errmsg := fmt.Sprintf("subscription failure reported by %s", instance)
+			t.Status.MarkStatusConfigMapFailed(common.ReasonStatusSubscriptionFailed, errmsg)
+			return controller.NewPermanentError(errors.New(errmsg))
+
+		case status.SubscriptionStatusComplete:
+			// If one instance reports complete, consider the trigger completed.
+			// Note: this is eventually consistent, some nodes might be still sending events!
+			t.Status.MarkStatusConfigMapSucceeded(common.ReasonStatusSubscriptionCompleted, fmt.Sprintf("subscription failure reported by %s", instance))
+			return nil
+
+		case status.SubscriptionStatusReady:
+			// Running state takes precedence over ready state.
+			if temp != status.SubscriptionStatusRunning {
+				temp = status.SubscriptionStatusReady
+			}
+
+		case status.SubscriptionStatusRunning:
+			if temp != status.SubscriptionStatusRunning {
+				temp = status.SubscriptionStatusRunning
+			}
+		}
+	}
+
+	switch temp {
+	case status.SubscriptionStatusReady:
+		t.Status.MarkStatusConfigMapSucceeded(common.ReasonStatusSubscriptionReady, "subscription ready to dispatch events")
+
+	case status.SubscriptionStatusRunning:
+		t.Status.MarkStatusConfigMapSucceeded(common.ReasonStatusSubscriptionRunning, "subscription running")
+
+	default:
+		t.Status.MarkStatusConfigMapSucceeded(common.ReasonStatusSubscriptionUnknown, "no subscription status information")
+	}
 
 	return nil
 }

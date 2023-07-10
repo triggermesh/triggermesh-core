@@ -346,12 +346,8 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
-github.com/triggermesh/brokers v1.3.1-0.20230622073048-487ebcd8ca2f h1:eqy/3222QoToW7WtybN9z62jhhK/Yhu/s/UQTQSZuac=
-github.com/triggermesh/brokers v1.3.1-0.20230622073048-487ebcd8ca2f/go.mod h1:Mr/ZwDzR+hqMXsaIE3yGtXkBYNLfLdDpCHpC8BHiqkQ=
-github.com/triggermesh/brokers v1.3.1-0.20230623091025-fb34f7f267b8 h1:jsq4B2BOb+dS/jkCoioVEOmvRh0RdpAfGjDNHEF/tBA=
-github.com/triggermesh/brokers v1.3.1-0.20230623091025-fb34f7f267b8/go.mod h1:Mr/ZwDzR+hqMXsaIE3yGtXkBYNLfLdDpCHpC8BHiqkQ=
-github.com/triggermesh/brokers v1.3.1-0.20230623102721-efbb875971e0 h1:ak8GK7PZQYIgd4fW7lubglc763eqVXZrgHcQbRiTd6A=
-github.com/triggermesh/brokers v1.3.1-0.20230623102721-efbb875971e0/go.mod h1:Mr/ZwDzR+hqMXsaIE3yGtXkBYNLfLdDpCHpC8BHiqkQ=
+github.com/triggermesh/brokers v1.4.0 h1:KxPJJx2tP6ll1xka7fTl0YhPU9hADYScXMB4j/JK678=
+github.com/triggermesh/brokers v1.4.0/go.mod h1:PC5BxcNSGF+8nfOjAPGI8yOggeF3/mNXaAj8cOsCgeA=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
