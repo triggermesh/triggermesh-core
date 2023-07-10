@@ -37,11 +37,12 @@ func NewController(
 	tgInformer := tginformer.Get(ctx)
 	rbInformer := rbinformer.Get(ctx)
 	mbInformer := mbinformer.Get(ctx)
-	configMapInformer := cfgInformer.Get(ctx)
+	cmInformer := cfgInformer.Get(ctx)
 
 	r := &Reconciler{
 		rbLister: rbInformer.Lister(),
 		mbLister: mbInformer.Lister(),
+		cmLister: cmInformer.Lister(),
 	}
 
 	impl := tgreconciler.NewImpl(ctx, r)
@@ -191,7 +192,7 @@ func NewController(
 		Handler:    controller.HandleAll(enqueueFromBroker),
 	})
 
-	configMapInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	cmInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: filterConfigMapBroker,
 		Handler:    controller.HandleAll(enqueueFromConfigMapBroker),
 	})

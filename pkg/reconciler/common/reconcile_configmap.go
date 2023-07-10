@@ -18,10 +18,6 @@ import (
 	// import the other required packages
 )
 
-const (
-	configMapResourceSuffix = "status"
-)
-
 type ConfigMapReconciler interface {
 	Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.ConfigMap, error)
 }
@@ -42,9 +38,9 @@ func NewConfigMapReconciler(ctx context.Context, configMapLister corev1listers.C
 
 func (r *configMapReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1.ReconcilableBroker) (*corev1.ConfigMap, error) {
 	meta := rb.GetObjectMeta()
-	ns, name := meta.GetNamespace(), meta.GetName()
+	ns := meta.GetNamespace()
 
-	configMapName := name + "-" + rb.GetOwnedObjectsSuffix() + "-" + configMapResourceSuffix
+	configMapName := GetBrokerConfigMapName(rb)
 
 	desired := resources.NewConfigMap(ns, configMapName,
 		resources.ConfigMapWithMetaOptions(
