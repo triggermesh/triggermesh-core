@@ -77,7 +77,14 @@ func NewDeploymentForBroker(namespace, name string, bh BrokerHelper, opts ...res
 							},
 							Env: []corev1.EnvVar{
 								{Name: "PORT", Value: "8080"},
-								{Name: "BROKER_NAME", Value: name},
+								{
+									Name: "BROKER_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
 								{
 									Name: "KUBERNETES_NAMESPACE",
 									ValueFrom: &corev1.EnvVarSource{
