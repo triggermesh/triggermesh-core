@@ -186,3 +186,4 @@ rules:
   - list
   - watch
   - get
+  - update
