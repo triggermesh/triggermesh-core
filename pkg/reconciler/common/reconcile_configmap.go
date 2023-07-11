@@ -61,14 +61,14 @@ func (r *configMapReconciler) Reconcile(ctx context.Context, rb eventingv1alpha1
 		// The configMap has not been found, create it.
 		_, err = r.client.CoreV1().ConfigMaps(desired.Namespace).Create(ctx, desired, metav1.CreateOptions{})
 		if err != nil {
-			rb.GetReconcilableBrokerStatus().MarkStatusConfigFailed(ReasonFailedStatusConfigMapCreate, "Failed to create configMap for status reporting")
-			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedStatusConfigMapCreate,
+			rb.GetReconcilableBrokerStatus().MarkStatusConfigFailed(ReasonStatusConfigMapCreateFailed, "Failed to create configMap for status reporting")
+			return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonStatusConfigMapCreateFailed,
 				"Failed to create configMap for status reporting %s: %w", desired.Name, err)
 		}
 
 	default:
-		rb.GetReconcilableBrokerStatus().MarkStatusConfigFailed(ReasonFailedStatusConfigMapGet, "Failed to get configMap for status reporting")
-		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonFailedStatusConfigMapGet,
+		rb.GetReconcilableBrokerStatus().MarkStatusConfigFailed(ReasonStatusConfigMapGetFailed, "Failed to get configMap for status reporting")
+		return nil, pkgreconciler.NewEvent(corev1.EventTypeWarning, ReasonStatusConfigMapGetFailed,
 			"Failed to get configMap for status reporting %s: %w", desired.Name, err)
 	}
 
