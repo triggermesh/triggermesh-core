@@ -305,6 +305,9 @@ spec:
     - name: Ready
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Subscription
+      type: string
+      jsonPath: ".status.conditions[?(@.type==\"StatusConfigMapReady\")].reason"
     - name: Reason
       type: string
       jsonPath: ".status.conditions[?(@.type==\"Ready\")].reason"
