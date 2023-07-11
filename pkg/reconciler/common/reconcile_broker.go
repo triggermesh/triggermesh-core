@@ -97,7 +97,7 @@ func buildBrokerDeployment(rb eventingv1alpha1.ReconcilableBroker, sa *corev1.Se
 	copts := []resources.ContainerOption{
 		resources.ContainerAddArgs("start"),
 		resources.ContainerAddEnvFromValue("PORT", strconv.Itoa(int(brokerContainerPort))),
-		resources.ContainerAddEnvFromValue("BROKER_NAME", name),
+		resources.ContainerAddEnvFromFieldRef("BROKER_NAME", "metadata.name"),
 		resources.ContainerAddEnvFromFieldRef("KUBERNETES_NAMESPACE", "metadata.namespace"),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_NAME", secret.Name),
 		resources.ContainerAddEnvFromValue("KUBERNETES_BROKER_CONFIG_SECRET_KEY", ConfigSecretKey),
