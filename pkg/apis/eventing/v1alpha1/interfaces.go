@@ -33,6 +33,10 @@ type ReconcilableBrokerStatus interface {
 	MarkConfigSecretFailed(reason, messageFormat string, messageA ...interface{})
 	MarkConfigSecretReady()
 
+	// Status Config management.
+	MarkStatusConfigFailed(reason, messageFormat string, messageA ...interface{})
+	MarkStatusConfigReady()
+
 	// ServiceAccount status management.
 	MarkBrokerServiceAccountFailed(reason, messageFormat string, messageA ...interface{})
 	MarkBrokerServiceAccountReady()

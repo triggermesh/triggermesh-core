@@ -126,6 +126,7 @@ rules:
   - get
 
 # Read controller configurations
+# Create and read broker status ConfigMaps
 - apiGroups:
   - ''
   resources:
@@ -133,6 +134,8 @@ rules:
   verbs:
   - list
   - watch
+  - create
+  - get
 - apiGroups:
   - ''
   resources:
@@ -183,3 +186,4 @@ rules:
   - list
   - watch
   - get
+  - update

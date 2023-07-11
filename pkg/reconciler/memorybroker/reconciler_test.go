@@ -54,6 +54,7 @@ func TestAllCases(t *testing.T) {
 			},
 			WantCreates: []runtime.Object{
 				newSecretForBroker(tresources.TestNamespace, tresources.TestName),
+				newConfigMapForBroker(tresources.TestNamespace, tresources.TestName),
 				tresources.NewServiceAccountForBroker(tresources.TestNamespace, tresources.TestName, bh),
 				tresources.NewRoleBindingForBroker(tresources.TestNamespace, tresources.TestName, bh),
 				tresources.NewDeploymentForBroker(tresources.TestNamespace, tresources.TestName, bh),
@@ -68,6 +69,7 @@ func TestAllCases(t *testing.T) {
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerStatusConfigReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
 					),
@@ -87,10 +89,12 @@ func TestAllCases(t *testing.T) {
 					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
 					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
 					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+					tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerStatusConfigReady", corev1.ConditionTrue, "", ""),
 					tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
 					tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionFalse, "UnavailableEndpoints", "Endpoints for broker service do not exist"),
 				),
 				newSecretForBroker(tresources.TestNamespace, tresources.TestName),
+				newConfigMapForBroker(tresources.TestNamespace, tresources.TestName),
 				tresources.NewServiceAccountForBroker(tresources.TestNamespace, tresources.TestName, bh),
 				tresources.NewRoleBindingForBroker(tresources.TestNamespace, tresources.TestName, bh),
 				tresources.NewDeploymentForBroker(tresources.TestNamespace, tresources.TestName, bh, tresources.WithDeploymentReady()),
@@ -106,6 +110,7 @@ func TestAllCases(t *testing.T) {
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerEndpointsReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceAccountReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerServiceReady", corev1.ConditionTrue, "", ""),
+						tmtv1alpha1.MemoryBrokerWithStatusCondition("BrokerStatusConfigReady", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("MemoryBrokerBrokerRoleBinding", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusCondition("Ready", corev1.ConditionTrue, "", ""),
 						tmtv1alpha1.MemoryBrokerWithStatusAddress("http://"+tresources.TestName+"-mb-broker."+tresources.TestNamespace+".svc.cluster.local"),
@@ -133,6 +138,9 @@ func TestAllCases(t *testing.T) {
 			secretReconciler: common.NewSecretReconciler(ctx,
 				listers.GetSecretLister(),
 				listers.GetTriggerLister(),
+			),
+			configMapReconciler: common.NewConfigMapReconciler(ctx,
+				listers.GetConfigMapLister(),
 			),
 			saReconciler: common.NewServiceAccountReconciler(ctx,
 				listers.GetServiceAccountLister(),
@@ -184,6 +192,38 @@ func newSecretForBroker(namespace, name string) *corev1.Secret {
 		Data: map[string][]byte{
 			"config": []byte("triggers: {}\n"),
 		},
+	}
+
+	return s
+}
+
+func newConfigMapForBroker(namespace, name string) *corev1.ConfigMap {
+	s := &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ConfigMap",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name + "-mb-status",
+			Labels: map[string]string{
+				"app.kubernetes.io/component":  "broker-status",
+				"app.kubernetes.io/instance":   name + "-mb-status",
+				"app.kubernetes.io/managed-by": "triggermesh-core",
+				"app.kubernetes.io/name":       "memorybroker",
+				"app.kubernetes.io/part-of":    "triggermesh",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         "eventing.triggermesh.io/v1alpha1",
+					Kind:               "MemoryBroker",
+					Name:               name,
+					Controller:         &tTrue,
+					BlockOwnerDeletion: &tTrue,
+				},
+			},
+		},
+		Data: map[string]string{},
 	}
 
 	return s

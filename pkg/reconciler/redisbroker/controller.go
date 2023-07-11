@@ -16,12 +16,13 @@ import (
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client"
 	"knative.dev/pkg/client/injection/kube/informers/apps/v1/deployment"
+	"knative.dev/pkg/client/injection/kube/informers/core/v1/configmap"
 	endpointsinformer "knative.dev/pkg/client/injection/kube/informers/core/v1/endpoints"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/secret"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/service"
 	"knative.dev/pkg/client/injection/kube/informers/core/v1/serviceaccount"
 	rolebindingsinformer "knative.dev/pkg/client/injection/kube/informers/rbac/v1/rolebinding"
-	"knative.dev/pkg/configmap"
+	cmw "knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 
@@ -47,7 +48,7 @@ type envConfig struct {
 // Registers event handlers to enqueue events
 func NewController(
 	ctx context.Context,
-	cmw configmap.Watcher,
+	cmw cmw.Watcher,
 ) *controller.Impl {
 
 	env := &envConfig{}
@@ -58,6 +59,7 @@ func NewController(
 	rbInformer := rbinformer.Get(ctx)
 	trgInformer := trginformer.Get(ctx)
 	secretInformer := secret.Get(ctx)
+	configMapInformer := configmap.Get(ctx)
 	deploymentInformer := deployment.Get(ctx)
 	serviceInformer := service.Get(ctx)
 	endpointsInformer := endpointsinformer.Get(ctx)
@@ -67,8 +69,9 @@ func NewController(
 	_ = rolebindingsinformer.Get(ctx)
 
 	r := &reconciler{
-		secretReconciler: common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
-		saReconciler:     common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
+		secretReconciler:    common.NewSecretReconciler(ctx, secretInformer.Lister(), trgInformer.Lister()),
+		configMapReconciler: common.NewConfigMapReconciler(ctx, configMapInformer.Lister()),
+		saReconciler:        common.NewServiceAccountReconciler(ctx, serviceAccountInformer.Lister(), roleBindingsInformer.Lister()),
 		brokerReconciler: common.NewBrokerReconciler(ctx, deploymentInformer.Lister(), serviceInformer.Lister(), endpointsInformer.Lister(),
 			env.BrokerImage, corev1.PullPolicy(env.BrokerImagePullPolicy)),
 

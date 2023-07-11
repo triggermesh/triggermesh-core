@@ -5,19 +5,23 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+
 	duckv1 "knative.dev/pkg/apis/duck/v1"
 	"knative.dev/pkg/kmeta"
 )
 
-var triggerCondSet = apis.NewLivingConditionSet(TriggerConditionBroker, TriggerConditionTargetResolved, TriggerConditionDeadLetterSinkResolved)
+var triggerCondSet = apis.NewLivingConditionSet(TriggerConditionBroker, TriggerConditionTargetResolved, TriggerConditionDeadLetterSinkResolved, TriggerConditionStatusConfigMap)
 
 const (
 	// TriggerConditionReady has status True when all subconditions below have been set to True.
 	TriggerConditionReady = apis.ConditionReady
 
 	TriggerConditionBroker apis.ConditionType = "BrokerReady"
+
+	TriggerConditionStatusConfigMap apis.ConditionType = "StatusConfigMapReady"
 
 	TriggerConditionTargetResolved apis.ConditionType = "TargetResolved"
 
@@ -122,7 +126,7 @@ func (ts *TriggerStatus) MarkDeadLetterSinkResolvedFailed(reason, messageFormat 
 	triggerCondSet.Manage(ts).MarkFalse(TriggerConditionDeadLetterSinkResolved, reason, messageFormat, messageA...)
 }
 
-func (t *Trigger) ReferencesBroker(broker kmeta.OwnerRefable) bool {
+func (t *Trigger) OwnerRefableMatchesBroker(broker kmeta.OwnerRefable) bool {
 	gvk := broker.GetGroupVersionKind()
 
 	// Require same namespace for Trigger and Broker.
@@ -142,4 +146,31 @@ func (t *Trigger) ReferencesBroker(broker kmeta.OwnerRefable) bool {
 
 	return t.Spec.Broker.Name == broker.GetObjectMeta().GetName() &&
 		t.Spec.Broker.Kind == gvk.Kind
+}
+
+func (t *Trigger) OwnerReferenceMatchesBroker(broker metav1.OwnerReference) bool {
+	if t.Spec.Broker.APIVersion != "" && t.Spec.Broker.APIVersion != broker.APIVersion {
+		return false
+	}
+
+	if t.Spec.Broker.Group != "" {
+		gv, err := schema.ParseGroupVersion(broker.APIVersion)
+		if err != nil {
+			return false
+		}
+		if t.Spec.Broker.Group != gv.Group {
+			return false
+		}
+	}
+
+	return t.Spec.Broker.Name == broker.Name &&
+		t.Spec.Broker.Kind == broker.Kind
+}
+
+func (ts *TriggerStatus) MarkStatusConfigMapFailed(reason, messageFormat string, messageA ...interface{}) {
+	triggerCondSet.Manage(ts).MarkFalse(TriggerConditionStatusConfigMap, reason, messageFormat, messageA...)
+}
+
+func (ts *TriggerStatus) MarkStatusConfigMapSucceeded(reason, message string) {
+	triggerCondSet.Manage(ts).MarkTrueWithReason(TriggerConditionStatusConfigMap, reason, message)
 }

@@ -16,6 +16,16 @@ const (
 	ReasonFailedSecretCreate  = "FailedSecretCreate"
 	ReasonFailedSecretUpdate  = "FailedSecretUpdate"
 
+	ReasonStatusConfigMapGetFailed    = "FailedConfigMapGet"
+	ReasonStatusConfigMapDoesNotExist = "FailedConfigMapDoesNotExist"
+	ReasonStatusConfigMapCreateFailed = "FailedConfigMapCreate"
+	ReasonStatusConfigMapReadFailed   = "FailedConfigMapRead"
+	ReasonStatusSubscriptionFailed    = "SubscriptionFailed"
+	ReasonStatusSubscriptionCompleted = "SubscriptionCompleted"
+	ReasonStatusSubscriptionUnknown   = "SubscriptionUnknown"
+	ReasonStatusSubscriptionReady     = "SubscriptionReady"
+	ReasonStatusSubscriptionRunning   = "SubscriptionRunning"
+
 	ReasonFailedServiceAccountGet    = "FailedServiceAccountGet"
 	ReasonFailedServiceAccountCreate = "FailedServiceAccountCreate"
 	ReasonFailedRoleBindingGet       = "FailedRoleBindingGet"
