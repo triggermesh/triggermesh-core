@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/stretchr/testify v1.8.4
 	github.com/triggermesh/brokers v1.4.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	k8s.io/api v0.26.5
 	k8s.io/apimachinery v0.26.5
 	k8s.io/client-go v0.26.5
@@ -16,7 +16,6 @@ require (
 )
 
 require (
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3 // indirect
 	golang.org/x/net v0.8.0 // indirect
 )
