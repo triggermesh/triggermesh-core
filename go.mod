@@ -12,7 +12,7 @@ require (
 	k8s.io/code-generator v0.26.5
 	knative.dev/eventing v0.37.1
 	knative.dev/pkg v0.0.0-20230616134650-eb63a40adfb0
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
